@@ -1,0 +1,1621 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Painel de Deals — PPA Invista</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #F7F6F3; --surface: #FFFFFF; --surface-alt: #F2F1EE;
+  --border: #E4E2DC; --border-strong: #C8C5BC;
+  --text-primary: #1A1916; --text-secondary: #5C5A54; --text-muted: #9A9890;
+  --accent: #1A56A0; --accent-bg: #EBF1FA; --accent-text: #1A4A8A;
+  --success: #1A7A4A; --success-bg: #E8F5EE;
+  --warning: #8A5C00; --warning-bg: #FDF3DC;
+  --danger: #A0251A; --danger-bg: #FAEAE8;
+  --purple: #5B21B6; --purple-bg: #EDE9FE;
+  --radius: 6px; --radius-lg: 10px;
+}
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text-primary); font-size: 13px; line-height: 1.5; min-height: 100vh; }
+
+/* Header */
+.app-header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 2rem; display: flex; align-items: center; justify-content: space-between; height: 52px; position: sticky; top: 0; z-index: 100; }
+.app-logo { font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+.app-logo span { color: var(--text-muted); font-weight: 400; }
+.logo-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+
+/* Upload screen */
+#screen-upload { max-width: 600px; margin: 4rem auto; padding: 0 1.5rem; }
+.upload-heading { font-size: 18px; font-weight: 600; margin-bottom: 6px; }
+.upload-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 2rem; }
+
+/* API key block */
+.apikey-block { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.25rem; margin-bottom: 1.25rem; }
+.apikey-label { font-size: 11px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+.apikey-label svg { color: var(--purple); }
+.apikey-input { width: 100%; padding: 7px 10px; border-radius: var(--radius); border: 1px solid var(--border-strong); font-size: 12px; font-family: monospace; color: var(--text-primary); background: var(--surface-alt); }
+.apikey-input:focus { outline: none; border-color: var(--accent); }
+.apikey-hint { font-size: 11px; color: var(--text-muted); margin-top: 6px; }
+
+.upload-slots { display: flex; flex-direction: column; gap: 10px; margin-bottom: 1.5rem; }
+.upload-slot { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.25rem; display: flex; flex-direction: column; gap: 0; cursor: pointer; transition: border-color .15s; }
+.slot-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; width: 100%; }
+.upload-slot:hover { border-color: var(--accent); }
+.upload-slot.filled { border-color: var(--success); background: var(--success-bg); }
+.upload-slot input[type=file] { display: none; }
+.slot-left { display: flex; align-items: center; gap: 10px; }
+.slot-icon { width: 34px; height: 34px; border-radius: var(--radius); background: var(--surface-alt); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.upload-slot.filled .slot-icon { background: var(--success-bg); border-color: #9ed4b8; }
+.slot-label { font-size: 12px; font-weight: 500; }
+.slot-hint { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+.upload-slot.filled .slot-hint { color: var(--success); }
+.slot-badge { font-size: 11px; font-weight: 500; padding: 3px 8px; border-radius: 4px; }
+.slot-badge.pending { background: var(--surface-alt); color: var(--text-muted); border: 1px solid var(--border); }
+.slot-badge.done { background: var(--success-bg); color: var(--success); }
+.btn-primary { width: 100%; padding: 10px; border-radius: var(--radius); font-size: 13px; font-weight: 500; background: var(--accent); color: #fff; border: none; cursor: pointer; font-family: inherit; transition: background .12s; }
+.btn-primary:hover { background: #174d92; }
+.btn-primary:disabled { opacity: .4; cursor: not-allowed; }
+.slot-url { width: 100%; margin-top: 10px; padding: 6px 8px; border-radius: var(--radius); border: 1px dashed var(--border-strong); font-size: 11px; font-family: inherit; color: var(--text-secondary); background: var(--surface); display: none; box-sizing: border-box; }
+.upload-slot.filled .slot-url { display: block; }
+.slot-url::placeholder { color: var(--text-muted); }
+.slot-url:focus { outline: none; border-color: var(--accent); border-style: solid; }
+
+/* Painel screen */
+#screen-painel { display: none; }
+.top-bar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 8px 2rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+.top-bar-left { font-size: 12px; color: var(--text-muted); }
+.btn-back { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: var(--radius); font-size: 12px; font-weight: 500; border: 1px solid var(--border-strong); color: var(--text-secondary); background: var(--surface); cursor: pointer; font-family: inherit; }
+.btn-back:hover { background: var(--surface-alt); }
+.btn-dl { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: var(--radius); font-size: 12px; font-weight: 500; border: 1px solid var(--border-strong); color: var(--text-secondary); background: var(--surface); cursor: pointer; text-decoration: none; white-space: nowrap; font-family: inherit; }
+.btn-dl:hover { background: var(--surface-alt); color: var(--text-primary); }
+.btn-dl-primary { border-color: var(--accent); color: var(--accent-text); background: var(--accent-bg); }
+.btn-dl-primary:hover { background: #d4e6f7; }
+.container { max-width: 960px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+/* Deal header */
+.deal-header { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; margin-bottom: 1.25rem; display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+.deal-title { font-size: 17px; font-weight: 600; margin-bottom: 4px; }
+.deal-meta { font-size: 12px; color: var(--text-muted); }
+.dl-group { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* Tabs */
+.tabs-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+.tabs-nav { display: flex; border-bottom: 1px solid var(--border); padding: 0 1.5rem; overflow-x: auto; }
+.tab-btn { padding: 12px 16px; font-size: 12px; font-weight: 500; color: var(--text-muted); border: none; background: none; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: color .12s; display: flex; align-items: center; gap: 6px; font-family: inherit; white-space: nowrap; }
+.tab-btn:hover { color: var(--text-primary); }
+.tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+.tab-btn.ai-tab.active { color: var(--purple); border-bottom-color: var(--purple); }
+.tab-panel { display: none; padding: 1.5rem; }
+.tab-panel.active { display: block; }
+
+/* Sections */
+.section-title { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; color: var(--text-muted); margin: 1.5rem 0 .75rem; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+.section-title:first-child { margin-top: 0; }
+
+/* Grids & Fields */
+.grid   { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 1rem; }
+.grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 1rem; }
+.field { display: flex; flex-direction: column; gap: 3px; }
+.field label { font-size: 10px; color: var(--text-muted); font-weight: 500; text-transform: uppercase; letter-spacing: .05em; }
+.field .val { font-size: 13px; font-weight: 500; overflow-wrap: anywhere; word-break: break-word; }
+.field .val.prose { font-weight: 400; line-height: 1.6; }
+
+/* Cards */
+.card { background: var(--surface-alt); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.25rem; margin-bottom: .75rem; }
+.card-title { font-size: 11px; font-weight: 600; color: var(--text-secondary); margin-bottom: .75rem; text-transform: uppercase; letter-spacing: .04em; }
+.cards-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 1rem; }
+.stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: .875rem 1.25rem; }
+.stat-card .stat-label { font-size: 10px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 6px; }
+.stat-card .stat-val { font-size: 16px; font-weight: 600; }
+
+/* KV rows */
+.kv-row { display: flex; align-items: center; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid var(--border); gap: 1rem; }
+.kv-row:last-child { border-bottom: none; }
+.kv-row .kv-label { font-size: 12px; color: var(--text-secondary); flex-shrink: 0; }
+.kv-row .kv-val, .checklist-row .kv-val { font-size: 12px; font-weight: 500; text-align: right; }
+
+/* Risk */
+.risk-block { background: var(--danger-bg); border: 1px solid #F0C0BC; border-radius: var(--radius-lg); padding: 1rem 1.25rem; margin-bottom: 1rem; }
+.risk-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--danger); margin-bottom: 4px; }
+.risk-text { font-size: 13px; color: var(--danger); }
+
+/* Checklist */
+.checklist-row { display: flex; align-items: center; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid var(--border); gap: 1rem; }
+.checklist-row:last-child { border-bottom: none; }
+.checklist-label { font-size: 12px; color: var(--text-secondary); }
+.badge { display: inline-flex; align-items: center; padding: 2px 7px; border-radius: 4px; font-size: 11px; font-weight: 500; white-space: nowrap; }
+.badge.success { background: var(--success-bg); color: var(--success); }
+.badge.warning { background: var(--warning-bg); color: var(--warning); }
+.badge.accent  { background: var(--accent-bg);  color: var(--accent-text); }
+.icon { width: 14px; height: 14px; vertical-align: -2px; flex-shrink: 0; }
+
+/* Utilitários de célula, usados em qualquer .mini-table */
+.td-mono { font-weight: 600; }
+.td-desc, .td-onus { color: var(--text-secondary); }
+.td-num  { text-align: right; font-weight: 500; white-space: nowrap; }
+.td-saldo-pos { text-align: right; font-weight: 600; color: var(--success); white-space: nowrap; }
+.td-saldo-neg { text-align: right; font-weight: 600; color: var(--danger); white-space: nowrap; }
+.mat-link { display: inline; font-weight: 600; color: var(--accent-text); text-decoration: none; }
+.mat-link:hover { text-decoration: underline; }
+
+/* Tabelas compactas (Lastros / Garantias) — layout fixo para nunca precisar de
+   rolagem horizontal: o navegador distribui a largura entre as colunas e o
+   conteúdo quebra linha em vez de forçar a tabela a ficar mais larga. */
+.mini-table-wrap { border: 1px solid var(--border); border-radius: var(--radius-lg); margin-bottom: 1rem; }
+.mini-table { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 12px; }
+.mini-table th { text-align: left; padding: 8px 10px; font-size: 10px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; background: var(--surface-alt); border-bottom: 1px solid var(--border); }
+.mini-table td { padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; line-height: 1.5; overflow-wrap: normal; word-break: normal; }
+.mini-table tr:last-child td { border-bottom: none; }
+.mini-table tr:hover td { background: var(--surface-alt); }
+.mini-table summary { cursor: pointer; font-size: 11px; color: var(--accent-text); }
+.mini-table details[open] summary { color: var(--text-secondary); }
+.mini-table .mt-detail { margin-top: 6px; font-size: 11px; color: var(--text-secondary); font-weight: 400; }
+.mini-table.compact { font-size: 11px; }
+.mini-table.compact th { text-align: center; }
+.ver-detail-btn { display: block; margin-top: 4px; padding: 0; border: none; background: none; font-size: 11px; color: var(--accent-text); cursor: pointer; font-family: inherit; text-align: right; width: 100%; }
+.ver-detail-btn:hover { text-decoration: underline; }
+
+/* Popup de detalhes (ex.: Ônus vigentes) */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 1.5rem; }
+.modal-box { background: var(--surface); border-radius: var(--radius-lg); max-width: 560px; width: 100%; max-height: 80vh; display: flex; flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,.25); }
+.modal-header { display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.25rem; border-bottom: 1px solid var(--border); font-size: 13px; font-weight: 600; }
+.modal-close { background: none; border: none; font-size: 20px; line-height: 1; color: var(--text-muted); cursor: pointer; padding: 0 4px; }
+.modal-close:hover { color: var(--text-primary); }
+.modal-body { padding: 1.25rem; overflow-y: auto; font-size: 12px; }
+.assets-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 1rem; }
+.asset-stat { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: .75rem 1rem; }
+.asset-stat .as-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--text-muted); margin-bottom: 4px; }
+.asset-stat .as-val   { font-size: 15px; font-weight: 600; }
+
+/* ── Análise IA ── */
+.ai-header { display: flex; align-items: center; gap: 10px; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border); }
+.ai-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 4px; background: var(--purple-bg); color: var(--purple); }
+.ai-model { font-size: 11px; color: var(--text-muted); }
+
+.ai-section { margin-bottom: 1.5rem; }
+.ai-section-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--text-secondary); margin-bottom: .75rem; display: flex; align-items: center; gap: 6px; }
+.ai-prose { font-size: 13px; line-height: 1.75; color: var(--text-primary); white-space: pre-wrap; }
+
+.ai-risk-item { display: flex; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.ai-risk-item:last-child { border-bottom: none; }
+.ai-risk-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
+.ai-risk-dot.high   { background: var(--danger); }
+.ai-risk-dot.medium { background: var(--warning); }
+.ai-risk-dot.low    { background: var(--success); }
+.ai-risk-text { font-size: 12px; line-height: 1.6; color: var(--text-primary); }
+
+.ai-flag { background: var(--warning-bg); border: 1px solid #E8D5A3; border-radius: var(--radius-lg); padding: .875rem 1rem; margin-bottom: .625rem; display: flex; gap: 10px; }
+.ai-flag-icon { font-size: 14px; flex-shrink: 0; line-height: 1.5; }
+.ai-flag-text { font-size: 12px; line-height: 1.6; color: var(--text-primary); }
+
+.ai-loading { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 3rem 1rem; gap: 1rem; color: var(--text-muted); }
+.ai-spinner { width: 28px; height: 28px; border: 2px solid var(--border); border-top-color: var(--purple); border-radius: 50%; animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.ai-loading-text { font-size: 12px; }
+
+.ai-error { background: var(--danger-bg); border: 1px solid #F0C0BC; border-radius: var(--radius-lg); padding: 1rem 1.25rem; font-size: 12px; color: var(--danger); }
+.ai-empty { text-align: center; padding: 3rem 1rem; color: var(--text-muted); font-size: 13px; }
+
+.ai-regenerate { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: var(--radius); font-size: 11px; font-weight: 500; border: 1px solid var(--border-strong); color: var(--text-secondary); background: var(--surface); cursor: pointer; font-family: inherit; margin-top: 1rem; }
+.ai-regenerate:hover { background: var(--surface-alt); }
+
+/* ── Q&A ── */
+.qa-wrap { border-top: 1px solid var(--border); margin-top: 1.5rem; padding-top: 1.5rem; }
+.qa-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+.qa-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--text-secondary); display: flex; align-items: center; gap: 6px; }
+.qa-meta { font-size: 11px; color: var(--text-muted); }
+.qa-cost-warn { background: var(--warning-bg); border: 1px solid #E8D5A3; border-radius: var(--radius); padding: 6px 10px; font-size: 11px; color: var(--warning); display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; }
+.qa-messages { display: flex; flex-direction: column; gap: 10px; margin-bottom: 1rem; min-height: 0; }
+.qa-msg { display: flex; flex-direction: column; gap: 3px; }
+.qa-msg-user { align-items: flex-end; }
+.qa-msg-assistant { align-items: flex-start; }
+.qa-bubble { max-width: 85%; padding: 8px 12px; border-radius: 10px; font-size: 12px; line-height: 1.6; }
+.qa-bubble-user { background: var(--accent); color: #fff; border-radius: 10px 10px 2px 10px; }
+.qa-bubble-assistant { background: var(--surface-alt); border: 1px solid var(--border); color: var(--text-primary); border-radius: 10px 10px 10px 2px; white-space: pre-wrap; }
+.qa-bubble-thinking { background: var(--surface-alt); border: 1px dashed var(--border-strong); color: var(--text-muted); border-radius: 10px; font-style: italic; display: flex; align-items: center; gap: 8px; }
+.qa-input-row { display: flex; gap: 8px; }
+.qa-input { flex: 1; padding: 8px 12px; border-radius: var(--radius); border: 1px solid var(--border-strong); font-size: 12px; font-family: inherit; color: var(--text-primary); background: var(--surface); resize: none; line-height: 1.5; }
+.qa-input:focus { outline: none; border-color: var(--accent); }
+.qa-send { padding: 8px 16px; border-radius: var(--radius); font-size: 12px; font-weight: 500; background: var(--accent); color: #fff; border: none; cursor: pointer; font-family: inherit; white-space: nowrap; flex-shrink: 0; }
+.qa-send:hover { background: #174d92; }
+.qa-send:disabled { opacity: .4; cursor: not-allowed; }
+.qa-clear { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: var(--radius); font-size: 11px; font-weight: 500; border: 1px solid var(--border-strong); color: var(--danger); background: var(--surface); cursor: pointer; font-family: inherit; }
+.qa-clear:hover { background: var(--danger-bg); }
+
+@media (max-width: 600px) { .container { padding: 1rem; } .tabs-nav { overflow-x: auto; padding: 0 .75rem; } .tab-panel { padding: 1rem; } }
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="app-logo">
+    <div class="logo-dot"></div>
+    PPA Invista
+    <span>/ Painel de Deals</span>
+  </div>
+</header>
+
+<!-- ══ TELA DE UPLOAD ══════════════════════════════════════════════════════ -->
+<div id="screen-upload">
+  <div class="upload-heading">Carregar documentos do deal</div>
+  <div class="upload-sub">Selecione os arquivos Word preenchidos. O painel e a análise serão gerados automaticamente.</div>
+
+  <!-- API Key -->
+  <div class="apikey-block">
+    <div class="apikey-label">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      Chave de API Anthropic
+    </div>
+    <input class="apikey-input" type="password" id="api-key-input" placeholder="sk-ant-..." autocomplete="off">
+    <div class="apikey-hint">A chave é usada apenas no seu browser para gerar a análise de IA. Não é enviada a nenhum servidor externo além da API da Anthropic.</div>
+  </div>
+
+  <div class="upload-slots">
+
+    <div class="upload-slot" id="slot-prev">
+      <input type="file" id="input-prev" accept=".docx" onchange="handleFile(this,'prev')" style="display:none">
+      <div class="slot-row" onclick="document.getElementById('input-prev').click()">
+        <div class="slot-left">
+          <div class="slot-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
+          </div>
+          <div>
+            <div class="slot-label">Análise Prévia de Viabilidade</div>
+            <div class="slot-hint" id="hint-prev">Clique para selecionar o .docx</div>
+          </div>
+        </div>
+        <span class="slot-badge pending" id="badge-prev">Pendente</span>
+      </div>
+      <input class="slot-url" id="url-prev" type="url" placeholder="URL SharePoint (opcional — link de download)" oninput="updateUrl('prev')">
+    </div>
+
+    <div class="upload-slot" id="slot-rj">
+      <input type="file" id="input-rj" accept=".docx" onchange="handleFile(this,'rj')" style="display:none">
+      <div class="slot-row" onclick="document.getElementById('input-rj').click()">
+        <div class="slot-left">
+          <div class="slot-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
+          </div>
+          <div>
+            <div class="slot-label">Checklist de Recuperação Judicial</div>
+            <div class="slot-hint" id="hint-rj">Clique para selecionar o .docx</div>
+          </div>
+        </div>
+        <span class="slot-badge pending" id="badge-rj">Pendente</span>
+      </div>
+      <input class="slot-url" id="url-rj" type="url" placeholder="URL SharePoint (opcional — link de download)" oninput="updateUrl('rj')">
+    </div>
+
+    <div class="upload-slot" id="slot-cred">
+      <input type="file" id="input-cred" accept=".docx" onchange="handleFile(this,'cred')" style="display:none">
+      <div class="slot-row" onclick="document.getElementById('input-cred').click()">
+        <div class="slot-left">
+          <div class="slot-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
+          </div>
+          <div>
+            <div class="slot-label">Análise de Créditos em RJ</div>
+            <div class="slot-hint" id="hint-cred">Clique para selecionar o .docx</div>
+          </div>
+        </div>
+        <span class="slot-badge pending" id="badge-cred">Pendente</span>
+      </div>
+      <input class="slot-url" id="url-cred" type="url" placeholder="URL SharePoint (opcional — link de download)" oninput="updateUrl('cred')">
+    </div>
+
+    <div class="upload-slot" id="slot-ativos">
+      <input type="file" id="input-ativos" accept=".xlsx,.xls" onchange="handleXlsx(this)" style="display:none">
+      <div class="slot-row" onclick="document.getElementById('input-ativos').click()">
+        <div class="slot-left">
+          <div class="slot-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>
+          </div>
+          <div>
+            <div class="slot-label">Análise de Matrículas — Ativos Imobiliários</div>
+            <div class="slot-hint" id="hint-ativos">Clique para selecionar o .xlsx (opcional)</div>
+          </div>
+        </div>
+        <span class="slot-badge pending" id="badge-ativos">Pendente</span>
+      </div>
+      <div id="ativos-url-block" style="display:none;margin-top:10px;">
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">Links por matrícula — formato <code style="background:var(--surface-alt);padding:1px 4px;border-radius:3px">MATRÍCULA:URL</code>, um por linha:</div>
+        <textarea id="textarea-ativos-urls" rows="3" placeholder="7.890:https://empresa.sharepoint.com/avaliacao.pdf" style="width:100%;padding:6px 8px;border-radius:var(--radius);border:1px dashed var(--border-strong);font-size:11px;font-family:inherit;color:var(--text-secondary);background:var(--surface);resize:vertical;box-sizing:border-box;" oninput="updateAtivosUrls()"></textarea>
+      </div>
+    </div>
+
+  </div>
+
+  <button class="btn-primary" id="btn-gerar" disabled onclick="gerarPainel()">
+    Gerar painel
+  </button>
+</div>
+
+<!-- ══ TELA DO PAINEL ══════════════════════════════════════════════════════ -->
+<div id="screen-painel">
+
+  <div class="top-bar">
+    <span class="top-bar-left" id="top-meta"></span>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <div id="dl-buttons" class="dl-group"></div>
+      <button class="btn-dl btn-dl-primary" onclick="downloadPainel()">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Baixar painel (.html)
+      </button>
+      <button class="btn-back" onclick="voltarUpload()">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+        Novo upload
+      </button>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="deal-header">
+      <div>
+        <div class="deal-title" id="deal-title">—</div>
+        <div class="deal-meta" id="deal-meta">PPA Invista</div>
+      </div>
+      <div class="dl-group" id="deal-header-dl-group"></div>
+    </div>
+
+    <div class="tabs-wrap">
+      <nav class="tabs-nav">
+        <button class="tab-btn active" id="tab-btn-previa" onclick="showTab('previa',this)">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          Análise prévia
+        </button>
+        <button class="tab-btn" id="tab-btn-rj" onclick="showTab('rj',this)">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+          Checklist RJ
+        </button>
+        <button class="tab-btn" id="tab-btn-creditos" onclick="showTab('creditos',this)">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="12" cy="12" r="9"/><path d="M14.8 9A2 2 0 0 0 13 8h-2a2 2 0 0 0 0 4h2a2 2 0 0 1 0 4h-2a2 2 0 0 1-1.8-1M12 7v1m0 8v1"/></svg>
+          Créditos em RJ
+        </button>
+        <button class="tab-btn" id="tab-btn-ativos" onclick="showTab('ativos',this)">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          Ativos imobiliários
+        </button>
+        <button class="tab-btn ai-tab" id="tab-btn-ia" onclick="showTab('ia',this)">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M12 2a10 10 0 1 0 10 10"/><path d="M12 6v6l4 2"/><circle cx="18" cy="6" r="3" fill="currentColor" stroke="none"/></svg>
+          Análise IA
+        </button>
+      </nav>
+
+      <!-- ABA PRÉVIA -->
+      <div id="tab-previa" class="tab-panel active">
+        <div class="section-title">Dados gerais</div>
+        <div class="grid">
+          <div class="field"><label>Exequente(s)</label><div class="val" id="p-exequente">—</div></div>
+          <div class="field"><label>Executado(s)</label><div class="val" id="p-executado">—</div></div>
+          <div class="field"><label>SOP</label><div class="val" id="p-sop-geral">—</div></div>
+          <div class="field"><label>SAT</label><div class="val" id="p-sat">—</div></div>
+          <div class="field"><label>Advogada responsável</label><div class="val" id="p-adv">—</div></div>
+        </div>
+        <div class="field" style="margin-bottom:1rem"><label>Resumo do caso</label><div class="val prose" id="p-resumo">—</div></div>
+        <div class="risk-block">
+          <div class="risk-label">⚠ Riscos jurídicos</div>
+          <div class="risk-text" id="p-riscos">—</div>
+        </div>
+        <div class="section-title">Visão jurídica</div>
+        <div id="p-processos-container"></div>
+        <div class="section-title">Ativos — imóveis</div>
+        <div id="p-imoveis-container"></div>
+        <div class="section-title">Passivo preferencial</div>
+        <div class="card">
+          <div class="kv-row"><span class="kv-label">Fiscal total (E-CAC + Dívida Ativa)</span><span class="kv-val" id="p-fiscal-total">—</span></div>
+          <div class="kv-row"><span class="kv-label">Trabalhista</span><span class="kv-val" id="p-trabalhista">—</span></div>
+          <div class="kv-row"><span class="kv-label">Pesquisa prévia realizada</span><span class="kv-val" id="p-pesquisa">—</span></div>
+          <div class="kv-row"><span class="kv-label">Pesquisa qualificada</span><span class="kv-val" id="p-pesq-qual">—</span></div>
+        </div>
+      </div>
+
+      <!-- ABA RJ -->
+      <div id="tab-rj" class="tab-panel">
+        <div class="section-title">Dados gerais</div>
+        <div class="grid-3">
+          <div class="field"><label>Recuperação judicial nº</label><div class="val" id="rj-numero">—</div></div>
+          <div class="field"><label>Vara</label><div class="val" id="rj-vara">—</div></div>
+          <div class="field"><label>Requerentes</label><div class="val" id="rj-requerentes">—</div></div>
+          <div class="field"><label>Advogados dos requerentes</label><div class="val" id="rj-advs">—</div></div>
+          <div class="field"><label>Adm. judicial</label><div class="val" id="rj-adj">—</div></div>
+          <div class="field"><label>Data do pedido</label><div class="val" id="rj-pedido">—</div></div>
+          <div class="field"><label>Data do deferimento</label><div class="val" id="rj-deferimento">—</div></div>
+          <div class="field"><label>Status</label><div class="val" id="rj-status">—</div></div>
+        </div>
+        <div class="section-title">Assembleia geral de credores (AGC)</div>
+        <div class="card">
+          <div class="kv-row"><span class="kv-label">Situação</span><span class="kv-val" id="rj-agc-status">—</span></div>
+          <div class="kv-row"><span class="kv-label">Datas</span><span class="kv-val" id="rj-agc-datas">—</span></div>
+        </div>
+        <div class="section-title">Quadro geral de credores (QGC)</div>
+        <div class="cards-row">
+          <div class="stat-card"><div class="stat-label">Classe I — Trabalhista</div><div class="stat-val" id="rj-qgc-i">—</div></div>
+          <div class="stat-card"><div class="stat-label">Classe II — Garantia real</div><div class="stat-val" id="rj-qgc-ii">—</div></div>
+          <div class="stat-card"><div class="stat-label">Classe III — Quirografário</div><div class="stat-val" id="rj-qgc-iii">—</div></div>
+          <div class="stat-card"><div class="stat-label">Classe IV — ME/EPP</div><div class="stat-val" id="rj-qgc-iv">—</div></div>
+          <div class="stat-card"><div class="stat-label">Total dos créditos arrolados</div><div class="stat-val" id="rj-qgc-total">—</div></div>
+        </div>
+        <div class="section-title">Plano de recuperação judicial (PRJ)</div>
+        <div class="cards-row">
+          <div class="card">
+            <div class="card-title">Classe II — Garantia real</div>
+            <div class="kv-row"><span class="kv-label">Deságio</span><span class="kv-val" id="rj-ii-desagio">—</span></div>
+            <div class="kv-row"><span class="kv-label">Carência</span><span class="kv-val" id="rj-ii-carencia">—</span></div>
+            <div class="kv-row"><span class="kv-label">Parcelas</span><span class="kv-val" id="rj-ii-parcelas">—</span></div>
+            <div class="kv-row"><span class="kv-label">Juros</span><span class="kv-val" id="rj-ii-juros">—</span></div>
+            <div class="kv-row"><span class="kv-label">Correção</span><span class="kv-val" id="rj-ii-correcao">—</span></div>
+          </div>
+          <div class="card">
+            <div class="card-title">Classe III — Quirografários</div>
+            <div class="kv-row"><span class="kv-label">Deságio</span><span class="kv-val" id="rj-iii-desagio">—</span></div>
+            <div class="kv-row"><span class="kv-label">Carência</span><span class="kv-val" id="rj-iii-carencia">—</span></div>
+            <div class="kv-row"><span class="kv-label">Parcelas</span><span class="kv-val" id="rj-iii-parcelas">—</span></div>
+            <div class="kv-row"><span class="kv-label">Juros</span><span class="kv-val" id="rj-iii-juros">—</span></div>
+            <div class="kv-row"><span class="kv-label">Correção</span><span class="kv-val" id="rj-iii-correcao">—</span></div>
+          </div>
+        </div>
+        <div class="section-title">Checklist de documentos</div>
+        <div class="card" id="rj-checklist"></div>
+      </div>
+
+      <!-- ABA CRÉDITOS -->
+      <div id="tab-creditos" class="tab-panel">
+        <div class="section-title">Crédito arrolado</div>
+        <div class="grid-3">
+          <div class="field"><label>Credor</label><div class="val" id="cr-credor">—</div></div>
+          <div class="field"><label>Advogados do credor</label><div class="val" id="cr-advs">—</div></div>
+          <div class="field"><label>Classe II</label><div class="val" id="cr-classe-ii">—</div></div>
+          <div class="field"><label>Representatividade</label><div class="val" id="cr-rep">—</div></div>
+          <div class="field"><label>Classe III</label><div class="val" id="cr-classe-iii">—</div></div>
+        </div>
+        <div class="section-title">Partes</div>
+        <div class="grid">
+          <div class="field"><label>Devedor(es)</label><div class="val" id="cr-devedores">—</div></div>
+          <div class="field"><label>Garantidor(es)</label><div class="val" id="cr-garantidores">—</div></div>
+        </div>
+        <div class="section-title">Lastros</div>
+        <div id="cr-lastros-container"></div>
+        <div class="section-title">Garantias</div>
+        <div id="cr-garantias-container"></div>
+        <div class="section-title">Ações judiciais</div>
+        <div id="cr-acoes"></div>
+      </div>
+
+      <!-- ABA ATIVOS IMOBILIÁRIOS -->
+      <div id="tab-ativos" class="tab-panel">
+        <div class="section-title">Resumo da carteira</div>
+        <div class="assets-summary">
+          <div class="asset-stat"><div class="as-label">Total de matrículas</div><div class="as-val" id="as-total">—</div></div>
+          <div class="asset-stat"><div class="as-label">VM total (avaliação)</div><div class="as-val" id="as-vm">—</div></div>
+        </div>
+        <div class="section-title">Matrículas</div>
+        <div class="mini-table-wrap">
+          <table class="mini-table compact">
+            <colgroup><col style="width:7%"><col style="width:9%"><col style="width:12%"><col style="width:26%"><col style="width:22%"><col style="width:7%"><col style="width:17%"></colgroup>
+            <thead>
+              <tr>
+                <th>Matrícula</th><th>Comarca</th><th>Proprietário</th>
+                <th>Descrição</th><th>Principais garantias vigentes</th><th>Fração ideal</th>
+                <th>VM (R$)</th>
+              </tr>
+            </thead>
+            <tbody id="ativos-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Popup de Ônus Vigentes (Ativos Imobiliários) -->
+      <div id="onus-modal-overlay" class="modal-overlay" style="display:none" onclick="if(event.target===this) closeDetailModal()">
+        <div class="modal-box">
+          <div class="modal-header">
+            <span id="onus-modal-title">Detalhes</span>
+            <button class="modal-close" onclick="closeDetailModal()" aria-label="Fechar">×</button>
+          </div>
+          <div class="modal-body" id="onus-modal-content"></div>
+        </div>
+      </div>
+
+      <!-- ABA ANÁLISE IA -->
+      <div id="tab-ia" class="tab-panel">
+        <div id="ia-content">
+          <div class="ai-empty">A análise de IA será gerada ao processar os documentos.</div>
+        </div>
+
+        <!-- Q&A -->
+        <div class="qa-wrap" id="qa-wrap" style="display:none">
+          <div class="qa-header">
+            <div class="qa-title">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              Perguntas sobre o deal
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <span class="qa-meta" id="qa-turn-count">0 perguntas &middot; ~$0,00</span>
+              <button class="qa-clear" onclick="limparConversa()">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+                Limpar conversa
+              </button>
+            </div>
+          </div>
+          <div class="qa-cost-warn" id="qa-cost-warn" style="display:none">
+            <span>&#9888; Voc&#234; j&#225; fez <strong id="qa-warn-count"></strong> perguntas nesta sess&#227;o. O hist&#243;rico acumulado aumenta o custo por pergunta. Considere limpar a conversa.</span>
+            <button class="qa-clear" onclick="limparConversa()" style="white-space:nowrap;flex-shrink:0">Limpar agora</button>
+          </div>
+          <div class="qa-messages" id="qa-messages"></div>
+          <div class="qa-input-row">
+            <textarea class="qa-input" id="qa-input" rows="2" placeholder="Fa&#231;a uma pergunta sobre este deal&#8230;" onkeydown="qaKeydown(event)"></textarea>
+            <button class="qa-send" id="qa-send-btn" onclick="enviarPergunta()">Enviar</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div style="margin-top:1.5rem;font-size:11px;color:var(--text-muted);text-align:center">
+      Documento confidencial · Uso interno exclusivo do Time PPA — Invista
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Estado ────────────────────────────────────────────────────────────────────
+const state = { prev: null, rj: null, cred: null };
+const fileBlobs = { prev: null, rj: null, cred: null };
+let ativosBlob = null;
+let ativosData = [];
+let ativosUrlMap = {};
+let aiResult = null; // { resumo, riscos: [{nivel, texto}], flags: [str] }
+let qaHistory = [];  // [{role, content}] — histórico da conversa Q&A
+let qaTurns = 0;     // contador de perguntas na sessão
+
+// ── Upload ────────────────────────────────────────────────────────────────────
+function handleFile(input, key) {
+  const file = input.files[0];
+  if (!file) return;
+  fileBlobs[key] = file;
+  document.getElementById('slot-' + key).classList.add('filled');
+  document.getElementById('hint-' + key).textContent = file.name;
+  const b = document.getElementById('badge-' + key);
+  b.textContent = 'Carregado'; b.className = 'slot-badge done';
+  checkBtn();
+}
+
+function handleXlsx(input) {
+  const file = input.files[0];
+  if (!file) return;
+  ativosBlob = file;
+  document.getElementById('slot-ativos').classList.add('filled');
+  document.getElementById('hint-ativos').textContent = file.name;
+  const b = document.getElementById('badge-ativos');
+  b.textContent = 'Carregado'; b.className = 'slot-badge done';
+  document.getElementById('ativos-url-block').style.display = 'block';
+  checkBtn();
+}
+
+function checkBtn() {
+  const anyDoc = Object.values(fileBlobs).some(Boolean) || !!ativosBlob;
+  document.getElementById('btn-gerar').disabled = !anyDoc;
+}
+
+const docUrls = { prev: '', rj: '', cred: '' };
+function updateUrl(key) {
+  const raw = document.getElementById('url-' + key).value.trim();
+  docUrls[key] = raw.startsWith('//') ? 'https:' + raw : raw;
+}
+function updateAtivosUrls() {
+  const raw = document.getElementById('textarea-ativos-urls').value;
+  ativosUrlMap = {};
+  raw.split('\n').forEach(line => {
+    const idx = line.indexOf(':');
+    if (idx < 1) return;
+    const mat = line.slice(0, idx).trim();
+    const url = line.slice(idx + 1).trim();
+    const fullUrl = url.startsWith('//') ? 'https:' + url : url;
+    if (mat && fullUrl) ativosUrlMap[mat] = fullUrl;
+  });
+}
+
+// ── Extração DOCX ─────────────────────────────────────────────────────────────
+async function readDocx(file) {
+  const buf = await file.arrayBuffer();
+  const zip = await JSZip.loadAsync(buf);
+  const xml = await zip.file('word/document.xml').async('string');
+  return extractFields(xml);
+}
+
+function decodeXmlEntities(str) {
+  return str
+    .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'").replace(/&#(\d+);/g, (_, n) => String.fromCharCode(n))
+    .replace(/&amp;/g, '&');
+}
+function cellText(cell) {
+  // Cada <w:p> dentro da célula é um parágrafo do Word — sem isso, várias
+  // averbações digitadas em linhas separadas ficam coladas num único bloco.
+  const paras = cell.split(/<w:p[ >]/).slice(1);
+  return paras.map(p => {
+    const withBreaks = p.replace(/<w:br\b[^>]*\/?>/g, '\n');
+    return decodeXmlEntities((withBreaks.match(/<w:t(?:\s[^>]*)?>([^<]*)<\/w:t>/g) || [])
+      .map(t => t.replace(/<[^>]+>/g, '')).join(''));
+  }).join('\n').trim();
+}
+function cellFill(cell) {
+  return (cell.match(/w:fill="([^"]+)"/) || [])[1] || '';
+}
+function pushScalar(scope, label, value) {
+  if (!label) return;
+  if (scope[label] === undefined) scope[label] = value;
+  else if (Array.isArray(scope[label])) scope[label].push(value);
+  else scope[label] = [scope[label], value];
+}
+
+// O documento é lido como uma sequência de blocos nomeados: uma linha de
+// tabela com 1 única célula em destaque abre um novo bloco — é isso que
+// demarca "LASTRO Nº 1", "LASTRO Nº 2", "Garantia nº 1", "Impugnação de
+// Crédito" etc. Linhas de 2 colunas (label/valor) e de 3 colunas (grupo/sub/
+// valor, com a 1ª coluna "carregada" nas linhas de continuação, como nas
+// condições da Classe II/III do PRJ) pertencem ao bloco vigente. Rótulos
+// repetidos dentro do mesmo escopo acumulam em lista em vez de se
+// sobrescreverem — nenhum valor é descartado silenciosamente.
+function extractFields(xml) {
+  const rows = xml.match(/<w:tr[ >][\s\S]*?<\/w:tr>/g) || [];
+
+  const root = { header: null, fields: {}, groups: {} };
+  const blocks = [];
+  const tables = [];
+
+  let current = root;
+  let col3Label = null;
+  let wideHeader = null, wideRows = null, wideTitle = null;
+
+  function closeWide() {
+    if (wideHeader) tables.push({ title: wideTitle, columns: wideHeader, rows: wideRows });
+    wideHeader = null; wideRows = null; wideTitle = null;
+  }
+
+  rows.forEach(row => {
+    const cells = row.match(/<w:tc\b[\s\S]*?<\/w:tc>/g) || [];
+
+    // Uma linha com 3+ células, TODAS em destaque, é o cabeçalho de uma
+    // tabela larga (ex.: "Nº da Matrícula | Cartório | ..." ou "NOME |
+    // CERTIDÕES | ENDIVIDAMENTO TRABALHISTA") — fecha qualquer tabela larga
+    // em andamento e abre outra. É diferente do padrão "grupo/sub/valor" (só
+    // a 1ª célula em destaque) e do padrão "campo solo" (nenhuma em
+    // destaque), tratados mais abaixo.
+    const allHighlighted = cells.length >= 3 && cells.every(c => cellFill(c).toUpperCase() === 'E8440A');
+    if (allHighlighted) {
+      closeWide();
+      wideHeader = cells.map(c => cellText(c).trim());
+      wideTitle = current.header;
+      wideRows = [];
+      return;
+    }
+    if (wideHeader) {
+      if (cells.length === wideHeader.length) {
+        const obj = {};
+        cells.forEach((c, i) => { obj[wideHeader[i]] = cellText(c).trim(); });
+        wideRows.push(obj);
+        return;
+      }
+      closeWide();
+    }
+
+    if (cells.length === 1) {
+      if (cellFill(cells[0]).toUpperCase() !== 'E8440A') return;
+      const label = cellText(cells[0]).trim();
+      if (!label) return;
+      current = { header: label, fields: {}, groups: {} };
+      blocks.push(current);
+      col3Label = null;
+      return;
+    }
+
+    if (cells.length === 2) {
+      if (cellFill(cells[0]).toUpperCase() !== 'E8440A') return;
+      pushScalar(current.fields, cellText(cells[0]).trim(), cellText(cells[1]).trim());
+      return;
+    }
+
+    if (cells.length === 3) {
+      const fill0 = cellFill(cells[0]).toUpperCase();
+      const c0 = cellText(cells[0]).trim();
+      const sub = cellText(cells[1]).trim();
+      const value = cellText(cells[2]).trim();
+      if (fill0 === 'FFFFFF') {
+        // Linha "solo": a 1ª coluna já É o nome do campo (ex.: "Endividamento
+        // Fiscal — E-cac" | valor | observação) — não é um grupo/sub-campo.
+        if (c0) pushScalar(current.fields, c0, sub);
+        return;
+      }
+      if (fill0 === 'E8440A') col3Label = c0;
+      if (!col3Label || !sub) return;
+      if (!current.groups[col3Label]) current.groups[col3Label] = {};
+      pushScalar(current.groups[col3Label], sub, value);
+    }
+  });
+  closeWide();
+
+  return { root, blocks, tables };
+}
+
+// ── Consultas sobre o documento extraído ────────────────────────────────────
+function getField(doc, label) {
+  if (doc.root.fields[label] !== undefined) return doc.root.fields[label];
+  for (const b of doc.blocks) if (b.fields[label] !== undefined) return b.fields[label];
+  return undefined;
+}
+function pick(doc, ...labels) {
+  for (const l of labels) {
+    const v = getField(doc, l);
+    if (v) return Array.isArray(v) ? v.join(' · ') : v;
+  }
+  return undefined;
+}
+function getFieldsMatching(doc, re) {
+  const out = [];
+  const scan = fields => Object.keys(fields).forEach(k => { if (re.test(k)) out.push([k, fields[k]]); });
+  scan(doc.root.fields);
+  doc.blocks.forEach(b => scan(b.fields));
+  return out;
+}
+function getGroup(doc, title) {
+  if (doc.root.groups[title]) return doc.root.groups[title];
+  for (const b of doc.blocks) if (b.groups[title]) return b.groups[title];
+  return null;
+}
+function getBlocks(doc, re) {
+  return doc.blocks.filter(b => re.test(b.header));
+}
+function joinVals(v) {
+  return Array.isArray(v) ? v.filter(Boolean).join('; ') : (v || '');
+}
+// Renderiza um valor (que pode ter múltiplas linhas — ex.: uma averbação por
+// linha num campo de Ônus) como um parágrafo por linha, em vez de um bloco só.
+function multilineHtml(v) {
+  const lines = joinVals(v).split('\n').map(l => l.trim()).filter(Boolean);
+  if (!lines.length) return '';
+  return lines.map(l => `<p style="margin-bottom:6px">${escHtml(l)}</p>`).join('');
+}
+
+// ── Extração XLSX ─────────────────────────────────────────────────────────────
+async function readXlsx(file) {
+  const buf = await file.arrayBuffer();
+  const wb  = XLSX.read(buf, { type: 'array' });
+  const ws  = wb.Sheets[wb.SheetNames[0]];
+  const raw = XLSX.utils.sheet_to_json(ws, { defval: '' });
+  const rows = raw.map(row => {
+    const out = {};
+    Object.keys(row).forEach(k => { out[k.trim()] = String(row[k] ?? '').trim(); });
+    return out;
+  });
+  // A planilha costuma ter linhas de rodapé depois das matrículas (ex.: "TOTAL"
+  // com somas automáticas, "Legenda:" explicando os ícones) — não são imóveis,
+  // então descartamos qualquer linha cuja "Matrícula" não tenha nenhum número.
+  return rows.filter(row => /\d/.test(row['Matrícula'] || ''));
+}
+
+// ── Análise IA via Anthropic API ──────────────────────────────────────────────
+function buildPrompt() {
+  const sections = [];
+
+  if (state.prev) {
+    const f = state.prev;
+    const processos = attachSubBlocks(f, /^Processo/i, [/^Imóvel/i]).map(({ main, subs }) => {
+      const detail = buildProcessoDetailText(main, subs);
+      return `- ${main.header}: Nº ${main.fields['Número do processo'] || '—'}; Executado(s) ${joinVals(main.fields['Executado(s)'])||'—'}; Distribuição ${main.fields['Data de distribuição']||'—'}; SOP ${main.fields['SOP']||'—'}; SAT ${main.fields['SAT']||'—'}; Status ${joinVals(main.fields['Status'])||'—'}` + (detail ? `\n  ${detail.replace(/\n/g, '\n  ')}` : '');
+    }).join('\n') || '—';
+    const imoveis = getBlocks(f, /^Imóvel/i).map(b => `- ${b.header}: Matrícula ${b.fields['Matrícula nº']||'—'}, Comarca ${b.fields['Comarca']||'—'}, Proprietário(s) ${joinVals(b.fields['Proprietário']||b.fields['Proprietários'])||'—'}, Avaliação ${b.fields['Avaliação']||'—'}, Ônus ${joinVals(b.fields['Ônus'])||'—'}`).join('\n') || '—';
+    const trabTotal = sumWideTableColumn(f, 'ENDIVIDAMENTO TRABALHISTA');
+    sections.push(`## ANÁLISE PRÉVIA DE VIABILIDADE
+Caso: ${pick(f, 'Nome do Caso') || '—'}
+Exequente(s): ${pick(f, 'Exequente(s)') || '—'}
+Executado(s): ${pick(f, 'Executado(s)') || '—'}
+SAT: ${pick(f, 'SAT') || '—'}
+SOP: ${pick(f, 'SOP') || '—'}
+Resumo do caso: ${pick(f, 'Resumo do caso') || '—'}
+Riscos jurídicos (campo original): ${pick(f, 'Riscos Jurídicos') || '—'}
+Endividamento fiscal total: ${pick(f, 'Endividamento Fiscal Total') || '—'}
+Endividamento trabalhista (soma): ${trabTotal !== null ? fmtBRL(trabTotal) : (pick(f, 'Passivo Trabalhista', 'Endividamento Trabalhista', 'Trabalhista') || '—')}
+Pesquisa prévia: ${pick(f, 'Pesquisa Prévia Realizada') || '—'}
+
+Processos (${getBlocks(f, /^Processo/i).length} identificados):
+${processos}
+
+Imóveis (${getBlocks(f, /^Imóvel/i).length} identificados):
+${imoveis}`);
+  }
+
+  if (state.rj) {
+    const f = state.rj;
+    const classeII  = getGroup(f, 'Condições da Classe II')  || {};
+    const classeIII = getGroup(f, 'Condições da Classe III') || {};
+    sections.push(`## CHECKLIST DE RECUPERAÇÃO JUDICIAL
+RJ nº: ${pick(f, 'Recuperação Judicial nº') || '—'}
+Vara: ${pick(f, 'Vara') || '—'}
+Requerentes: ${pick(f, 'Requerentes (Nome e CPF/CNPJ)') || '—'}
+Adm. judicial: ${pick(f, 'Administrador Judicial Nomeado') || '—'}
+Status: ${pick(f, 'Status') || '—'}
+Classe II — Deságio: ${classeII['Deságio'] || '—'}
+Classe II — Carência: ${classeII['Carência'] || '—'}
+Classe II — Parcelas: ${classeII['Parcelas'] || '—'}
+Classe III — Deságio: ${classeIII['Deságio'] || '—'}
+Classe III — Carência: ${classeIII['Carência'] || '—'}
+Classe III — Parcelas: ${classeIII['Parcelas'] || '—'}
+QGC Classe I: ${pick(f, 'Classe I') || '—'}
+QGC Classe II: ${pick(f, 'Classe II') || '—'}
+QGC Classe III: ${pick(f, 'Classe III') || '—'}
+QGC Classe IV: ${pick(f, 'Classe IV') || '—'}
+Situação AGC: ${pick(f, 'Situação da AGC') || '—'}`);
+  }
+
+  if (state.cred) {
+    const f = state.cred;
+    const classeII  = getFieldsMatching(f, /^Classe II(\s|\(|$)/).map(([k, v]) => `${k}: ${joinVals(v)}`).join(' | ') || '—';
+    const classeIII = getFieldsMatching(f, /^Classe III(\s|\(|$)/).map(([k, v]) => `${k}: ${joinVals(v)}`).join(' | ') || '—';
+    const lastros = getBlocks(f, /^LASTRO/i).map(b => `- ${b.header}: Cédula ${b.fields['Cédula'] || '—'}; Emitente(s) ${joinVals(b.fields['Emitente(s)'] || b.fields['Emitente'])||'—'}; Avalista(s)/Fiador(es) ${joinVals(b.fields['Avalista(s)/Fiador(es)'] || b.fields['Avalista(s)'] || b.fields['Avalista/Fiador'])||'—'}; Valor (Emissão) ${b.fields['Valor (Emissão)'] || b.fields['Valor Arrolado'] || '—'}; Classe ${b.fields['Classe'] || '—'}`).join('\n') || '—';
+    const garantias = getBlocks(f, /^Garantia/i).map(b => `- ${b.header}: Matrícula ${b.fields['Matrícula nº'] || '—'}, Comarca ${b.fields['Comarca'] || '—'}, Proprietário(s) ${joinVals(b.fields['Proprietário'] || b.fields['Proprietários'])||'—'}, Avaliação ${b.fields['Avaliação'] || '—'}`).join('\n') || '—';
+    const acoes = f.blocks.filter(b => !/^LASTRO/i.test(b.header) && !/^Garantia/i.test(b.header) && Object.keys(b.fields).some(k => /processo/i.test(k)))
+      .map(b => `- ${b.header}: ` + Object.entries(b.fields).map(([k, v]) => `${k}: ${joinVals(v)}`).join('; ')).join('\n') || '—';
+    sections.push(`## ANÁLISE DE CRÉDITOS EM RJ
+Credor: ${pick(f, 'Credor (Nome e CNPJ)') || '—'}
+Advogado(s): ${pick(f, 'Advogado(s)', 'Advogados') || '—'}
+Valores por classe: ${classeII} | ${classeIII}
+Representatividade (%): ${joinVals(getField(f, 'Representatividade (%)')) || '—'}
+Garantia(s) (nível crédito): ${joinVals(getField(f, 'Garantia(s)')) || '—'}
+
+Lastros (${getBlocks(f, /^LASTRO/i).length} identificados):
+${lastros}
+
+Garantias reais (${getBlocks(f, /^Garantia/i).length} identificadas):
+${garantias}
+
+Ações judiciais relacionadas ao crédito (tipo real, não assumir "execução"):
+${acoes}`);
+  }
+
+  return `Você é um analista sênior de crédito e recuperação judicial da equipe PPA da Invista. Analise os seguintes documentos de um deal e produza uma análise estruturada em JSON.
+
+${sections.join('\n\n')}
+
+Produza APENAS um objeto JSON válido, sem markdown, sem texto antes ou depois, com exatamente esta estrutura:
+{
+  "resumo": "Parágrafo único de 4-6 linhas com o resumo executivo do deal: natureza da operação, partes, garantia, valor e situação atual.",
+  "riscos": [
+    {"nivel": "alto|medio|baixo", "texto": "descrição do risco"},
+    ...
+  ],
+  "inconsistencias": [
+    "descrição de inconsistência ou gap entre documentos",
+    ...
+  ]
+}
+
+Regras:
+- "riscos": liste 3 a 6 riscos relevantes identificados nos documentos. Nivel: "alto" para riscos que podem inviabilizar o deal, "medio" para riscos gerenciáveis, "baixo" para riscos informativos.
+- "inconsistencias": liste divergências entre os documentos, campos críticos em branco, ou alertas relevantes. Se não houver, retorne array vazio [].
+- Seja objetivo e técnico. Não invente dados que não estejam nos documentos.`;
+}
+
+async function gerarAnaliseIA() {
+  const apiKey = document.getElementById('api-key-input').value.trim();
+  const iaDiv = document.getElementById('ia-content');
+
+  if (!apiKey) {
+    iaDiv.innerHTML = `<div class="ai-error">Chave de API não informada. Volte à tela de upload e preencha o campo da API key para gerar a análise.</div>`;
+    return;
+  }
+
+  iaDiv.innerHTML = `<div class="ai-loading"><div class="ai-spinner"></div><div class="ai-loading-text">Analisando documentos com Claude…</div></div>`;
+
+  try {
+    const prompt = buildPrompt();
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 4096,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error?.message || `Erro HTTP ${response.status}`);
+    }
+
+    const data = await response.json();
+    const text = data.content.map(b => b.text || '').join('').trim();
+    const clean = text.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim();
+    aiResult = JSON.parse(clean);
+    renderIA(aiResult);
+    document.getElementById('qa-wrap').style.display = 'block';
+
+  } catch (err) {
+    iaDiv.innerHTML = `<div class="ai-error">Erro ao gerar análise: ${err.message}<br><br><button class="ai-regenerate" onclick="gerarAnaliseIA()">↺ Tentar novamente</button></div>`;
+  }
+}
+
+// ── Q&A ───────────────────────────────────────────────────────────────────────
+function qaKeydown(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviarPergunta(); }
+}
+
+function qaSystemPrompt() {
+  return `Você é um analista sênior de crédito e recuperação judicial da equipe PPA da Invista. Responda perguntas sobre o deal abaixo de forma objetiva e técnica. Use os dados dos documentos — não invente informações ausentes.
+
+${buildPrompt().replace(/^Você.*?Produza APENAS.*?\n\{[\s\S]*?\}\n\nRegras:[\s\S]*?$/m, '')}`;
+}
+
+async function enviarPergunta() {
+  const apiKey = document.getElementById('api-key-input').value.trim();
+  const input  = document.getElementById('qa-input');
+  const pergunta = input.value.trim();
+  if (!pergunta || !apiKey) return;
+
+  const sendBtn = document.getElementById('qa-send-btn');
+  sendBtn.disabled = true;
+  input.value = '';
+
+  // Adiciona mensagem do usuário
+  qaHistory.push({ role: 'user', content: pergunta });
+  qaTurns++;
+  renderQaMessages(true);
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1024,
+        system: qaSystemPrompt(),
+        messages: qaHistory
+      })
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error?.message || `Erro HTTP ${response.status}`);
+    }
+
+    const data = await response.json();
+    const resposta = data.content.map(b => b.text || '').join('').trim();
+    qaHistory.push({ role: 'assistant', content: resposta });
+    renderQaMessages(false);
+    atualizarQaMeta();
+
+  } catch (err) {
+    qaHistory.push({ role: 'assistant', content: `Erro: ${err.message}` });
+    renderQaMessages(false);
+  } finally {
+    sendBtn.disabled = false;
+    input.focus();
+  }
+}
+
+function renderQaMessages(loading) {
+  const container = document.getElementById('qa-messages');
+  const msgs = qaHistory.map(m => {
+    if (m.role === 'user') {
+      return `<div class="qa-msg qa-msg-user"><div class="qa-bubble qa-bubble-user">${escHtml(m.content)}</div></div>`;
+    } else {
+      return `<div class="qa-msg qa-msg-assistant"><div class="qa-bubble qa-bubble-assistant">${escHtml(m.content)}</div></div>`;
+    }
+  }).join('');
+  const thinking = loading ? `<div class="qa-msg qa-msg-assistant"><div class="qa-bubble qa-bubble-thinking"><div class="ai-spinner" style="width:14px;height:14px;border-width:1.5px"></div> Analisando…</div></div>` : '';
+  container.innerHTML = msgs + thinking;
+  container.scrollTop = container.scrollHeight;
+}
+
+function atualizarQaMeta() {
+  // Estimativa de custo: ~1200 tokens input + 600 output por turno médio, acumulando
+  const inputToks  = 1200 + (qaTurns - 1) * 600;
+  const outputToks = qaTurns * 500;
+  const custo = (inputToks * 3 + outputToks * 15) / 1e6;
+  document.getElementById('qa-turn-count').textContent =
+    `${qaTurns} ${qaTurns === 1 ? 'pergunta' : 'perguntas'} · ~$${custo.toFixed(3)}`;
+  // Aviso a partir de 8 perguntas
+  const warn = document.getElementById('qa-cost-warn');
+  if (qaTurns >= 8) {
+    document.getElementById('qa-warn-count').textContent = qaTurns;
+    warn.style.display = 'flex';
+  } else {
+    warn.style.display = 'none';
+  }
+}
+
+function limparConversa() {
+  if (qaTurns > 0 && !confirm(`Limpar as ${qaTurns} perguntas desta sessão? O histórico será apagado e o custo por nova pergunta voltará ao mínimo.`)) return;
+  qaHistory = [];
+  qaTurns = 0;
+  document.getElementById('qa-messages').innerHTML = '';
+  document.getElementById('qa-turn-count').textContent = '0 perguntas · ~$0,00';
+  document.getElementById('qa-cost-warn').style.display = 'none';
+}
+
+function escHtml(str) {
+  // Insere um espaço de largura zero depois de / e - : só é usado pelo navegador
+  // como ponto de quebra quando a linha realmente precisa quebrar (ex.: códigos
+  // como "24550766/COMPRA/CONTRATAÇÃO" sem nenhum espaço) — nunca corta uma
+  // palavra no meio, e não muda nada quando o texto já cabe numa linha.
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/([\/\-–.,])/g, '$1​');
+}
+function escAttr(str) {
+  return escHtml(str).replace(/"/g,'&quot;');
+}
+
+function renderIA(r) {
+  if (!r) return;
+  const nivelLabel = { alto: 'Alto', medio: 'Médio', baixo: 'Baixo' };
+  const riscosDots = (r.riscos || []).map(ri => `
+    <div class="ai-risk-item">
+      <div class="ai-risk-dot ${ri.nivel}"></div>
+      <div class="ai-risk-text"><strong>${nivelLabel[ri.nivel] || ri.nivel}:</strong> ${ri.texto}</div>
+    </div>`).join('');
+
+  const flags = (r.inconsistencias || []).map(f =>
+    `<div class="ai-flag"><div class="ai-flag-icon">⚑</div><div class="ai-flag-text">${f}</div></div>`
+  ).join('') || '<div style="color:var(--text-muted);font-size:12px">Nenhuma inconsistência identificada.</div>';
+
+  document.getElementById('ia-content').innerHTML = `
+    <div class="ai-header">
+      <span class="ai-badge">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>
+        Claude
+      </span>
+      <span class="ai-model">claude-sonnet-4-6 · gerado automaticamente</span>
+    </div>
+
+    <div class="ai-section">
+      <div class="ai-section-title">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
+        Resumo executivo
+      </div>
+      <div class="card"><p class="ai-prose">${r.resumo || '—'}</p></div>
+    </div>
+
+    <div class="ai-section">
+      <div class="ai-section-title">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        Riscos identificados
+      </div>
+      <div class="card">${riscosDots || '<div style="color:var(--text-muted);font-size:12px">Nenhum risco identificado.</div>'}</div>
+    </div>
+
+    <div class="ai-section">
+      <div class="ai-section-title">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        Inconsistências e alertas
+      </div>
+      ${flags}
+    </div>
+
+    <div style="text-align:right">
+      <button class="ai-regenerate" onclick="gerarAnaliseIA()">↺ Regenerar análise</button>
+    </div>`;
+}
+
+// ── Renderização ──────────────────────────────────────────────────────────────
+// Campos do tipo "☐ Opção A X Opção B ☐ Opção C" (marcação de caixa do Word) —
+// troca o X pela opção marcada por ☑ e destaca só ela em verde; o resto some
+// da leitura visual sem perder a informação (fica em cinza, não em negrito).
+function renderCheckboxOptions(str) {
+  if (!str) return '—';
+  if (!str.includes('☐')) return escHtml(str);
+  const opts = str.match(/[☐X][^☐X]*/g);
+  if (!opts || !opts.length) return escHtml(str);
+  return opts.map(opt => {
+    const text = opt.trim();
+    if (/^X\b/.test(text)) {
+      return `<span style="color:var(--success);font-weight:600">☑ ${escHtml(text.replace(/^X\s*/, ''))}</span>`;
+    }
+    return `<span style="color:var(--text-muted)">${escHtml(text)}</span>`;
+  }).join(' ');
+}
+
+function set(id, value) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const v = Array.isArray(value) ? value.filter(Boolean).join(' · ') : value;
+  const s = v && v.trim ? (v.trim() || '—') : (v || '—');
+  if (typeof s === 'string' && s.includes('☐')) {
+    el.innerHTML = renderCheckboxOptions(s);
+  } else {
+    el.textContent = s;
+  }
+}
+
+// Agrupa cada bloco principal (ex.: "Processo n. 01") com os blocos que vêm
+// depois dele no documento e antes do próximo — isso captura sub-blocos como
+// "Embargos à Execução"/"Agravo de Instrumento", que pertencem ao processo
+// anterior mas são, na extração, blocos próprios e independentes.
+function attachSubBlocks(f, mainRe, boundaryRes) {
+  const all = f.blocks;
+  const mainIdxs = [];
+  all.forEach((b, i) => { if (mainRe.test(b.header)) mainIdxs.push(i); });
+  return mainIdxs.map((startIdx, k) => {
+    let endIdx = mainIdxs[k + 1] !== undefined ? mainIdxs[k + 1] : all.length;
+    for (let i = startIdx + 1; i < endIdx; i++) {
+      if (boundaryRes.some(re => re.test(all[i].header))) { endIdx = i; break; }
+    }
+    return { main: all[startIdx], subs: all.slice(startIdx + 1, endIdx) };
+  });
+}
+
+function buildProcessoDetailText(main, subs) {
+  const bf = main.fields;
+  const lines = [];
+  if (bf['Adv.:']) lines.push('Advogado(s): ' + joinVals(bf['Adv.:']));
+  if (bf['Risco de Prescrição Superficial']) lines.push('Risco de prescrição superficial: ' + joinVals(bf['Risco de Prescrição Superficial']));
+  if (bf['Lastro / Instrumento']) { lines.push('LASTRO / INSTRUMENTO'); lines.push(joinVals(bf['Lastro / Instrumento'])); }
+  if (bf['Garantia']) { lines.push('GARANTIA'); lines.push(joinVals(bf['Garantia'])); }
+  subs.forEach(sb => {
+    lines.push(sb.header.toUpperCase());
+    Object.entries(sb.fields).forEach(([k, v]) => lines.push(`${k}: ${joinVals(v)}`));
+  });
+  return lines.join('\n');
+}
+
+function renderPrev(f) {
+  set('p-exequente',    pick(f, 'Exequente(s)'));
+  set('p-executado',    pick(f, 'Executado(s)'));
+  set('p-sop-geral',    pick(f, 'SOP'));
+  set('p-sat',          pick(f, 'SAT'));
+  set('p-adv',          pick(f, 'Advogadas Responsáveis', 'Advogada Responsável'));
+  set('p-resumo',       pick(f, 'Resumo do caso'));
+  set('p-riscos',       pick(f, 'Riscos Jurídicos'));
+
+  const fiscalTotal = pick(f, 'Endividamento Fiscal Total');
+  const trabTotal = sumWideTableColumn(f, 'ENDIVIDAMENTO TRABALHISTA');
+  set('p-fiscal-total', fiscalTotal);
+  set('p-trabalhista',  pick(f, 'Passivo Trabalhista', 'Endividamento Trabalhista', 'Trabalhista') || (trabTotal !== null ? fmtBRL(trabTotal) : undefined));
+  set('p-pesquisa',     pick(f, 'Pesquisa Prévia Realizada'));
+  set('p-pesq-qual',    pick(f, 'Pesquisa Qualificada'));
+
+  // ── Processos (Visão jurídica) ──────────────────────────────────────────
+  const processos = attachSubBlocks(f, /^Processo/i, [/^Imóvel/i]);
+  const procContainer = document.getElementById('p-processos-container');
+  procContainer.innerHTML = processos.length
+    ? `<div class="mini-table-wrap"><table class="mini-table">
+        <colgroup><col style="width:11%"><col style="width:22%"><col style="width:16%"><col style="width:10%"><col style="width:13%"><col style="width:13%"><col style="width:15%"></colgroup>
+        <thead><tr><th>Processo</th><th>Nº do processo</th><th>Executado(s)</th><th>Distribuição</th><th>SOP</th><th>SAT</th><th>Status</th></tr></thead>
+        <tbody>${processos.map(({ main, subs }) => {
+          const bf = main.fields;
+          const detailText = buildProcessoDetailText(main, subs);
+          const verBtn = detailText
+            ? `<button type="button" class="ver-detail-btn" style="text-align:left" data-modal-title="${escAttr(main.header)}" data-modal-text="${escAttr(detailText)}" onclick="showDetailModal(this)">Ver detalhes ▾</button>`
+            : '';
+          return `<tr>
+            <td class="td-mono">${escHtml(main.header)}${verBtn}</td>
+            <td>${escHtml(joinVals(bf['Número do processo']) || '—')}</td>
+            <td>${escHtml(joinVals(bf['Executado(s)']) || '—')}</td>
+            <td>${escHtml(joinVals(bf['Data de distribuição']) || '—')}</td>
+            <td>${escHtml(joinVals(bf['SOP']) || '—')}</td>
+            <td>${escHtml(joinVals(bf['SAT']) || '—')}</td>
+            <td>${escHtml(joinVals(bf['Status']) || '—')}</td>
+          </tr>`;
+        }).join('')}</tbody>
+      </table></div>`
+    : '<p style="color:var(--text-muted);font-size:12px">Nenhum processo identificado.</p>';
+
+  // ── Imóveis ──────────────────────────────────────────────────────────────
+  const imoveis = getBlocks(f, /^Imóvel/i);
+  const imovelContainer = document.getElementById('p-imoveis-container');
+  imovelContainer.innerHTML = imoveis.length
+    ? `<div class="mini-table-wrap"><table class="mini-table">
+        <colgroup><col style="width:12%"><col style="width:12%"><col style="width:15%"><col style="width:22%"><col style="width:24%"><col style="width:15%"></colgroup>
+        <thead><tr><th>Imóvel</th><th>Matrícula nº</th><th>Comarca</th><th>Proprietário(s)</th><th>Descrição</th><th>Avaliação</th></tr></thead>
+        <tbody>${imoveis.map(b => {
+          const bf = b.fields;
+          const onus = joinVals(bf['Ônus']);
+          const verOnusBtn = onus
+            ? `<button type="button" class="ver-detail-btn" style="text-align:left" data-modal-title="${escAttr('Ônus vigentes — ' + b.header)}" data-modal-text="${escAttr(onus)}" onclick="showDetailModal(this)">Ver ônus ▾</button>`
+            : '';
+          return `<tr>
+            <td class="td-mono">${escHtml(b.header)}</td>
+            <td>${escHtml(joinVals(bf['Matrícula nº']) || '—')}</td>
+            <td>${escHtml(joinVals(bf['Comarca']) || '—')}</td>
+            <td>${escHtml(joinVals(bf['Proprietário'] || bf['Proprietários']) || '—')}</td>
+            <td>${escHtml(joinVals(bf['Descrição']) || '—')}${verOnusBtn}</td>
+            <td>${escHtml(joinVals(bf['Avaliação']) || '—')}</td>
+          </tr>`;
+        }).join('')}</tbody>
+      </table></div>`
+    : '<p style="color:var(--text-muted);font-size:12px">Nenhum imóvel identificado.</p>';
+
+  const nome = pick(f, 'Nome do Caso') || pick(f, 'Exequente(s)') || '—';
+  document.getElementById('deal-title').textContent = nome;
+  const parts = ['PPA Invista', pick(f, 'Advogadas Responsáveis', 'Advogada Responsável'), pick(f, 'Data da Análise')].filter(Boolean);
+  document.getElementById('deal-meta').textContent = parts.join(' · ');
+  document.getElementById('top-meta').textContent = nome;
+}
+
+function renderRJ(f) {
+  set('rj-numero',      pick(f, 'Recuperação Judicial nº'));
+  set('rj-vara',        pick(f, 'Vara'));
+  set('rj-requerentes', pick(f, 'Requerentes (Nome e CPF/CNPJ)'));
+  set('rj-advs',        pick(f, 'Advogados dos Requerentes'));
+  set('rj-adj',         pick(f, 'Administrador Judicial Nomeado'));
+  set('rj-pedido',      pick(f, 'Data do Pedido'));
+  set('rj-deferimento', pick(f, 'Data do Deferimento'));
+  set('rj-status',      pick(f, 'Status'));
+
+  const classeII  = getGroup(f, 'Condições da Classe II')  || {};
+  const classeIII = getGroup(f, 'Condições da Classe III') || {};
+  set('rj-ii-desagio',   classeII['Deságio']);
+  set('rj-ii-carencia',  classeII['Carência']);
+  set('rj-ii-parcelas',  classeII['Parcelas']);
+  set('rj-ii-juros',     classeII['Juros']);
+  set('rj-ii-correcao',  classeII['Correção']);
+  set('rj-iii-desagio',  classeIII['Deságio']);
+  set('rj-iii-carencia', classeIII['Carência']);
+  set('rj-iii-parcelas', classeIII['Parcelas']);
+  set('rj-iii-juros',    classeIII['Juros']);
+  set('rj-iii-correcao', classeIII['Correção']);
+
+  set('rj-qgc-i',   pick(f, 'Classe I'));
+  set('rj-qgc-ii',  pick(f, 'Classe II'));
+  set('rj-qgc-iii', pick(f, 'Classe III'));
+  set('rj-qgc-iv',  pick(f, 'Classe IV'));
+  set('rj-qgc-total', pick(f, 'Total dos créditos arrolados'));
+  set('rj-agc-status', pick(f, 'Situação da AGC'));
+  set('rj-agc-datas',  pick(f, 'Datas'));
+
+  const checkItems = [
+    'Petição Inicial da RJ', 'Quadro de Ativos dos Requerentes',
+    'Relatório de Perícia Prévia', 'Laudo de imóveis essenciais',
+    'Último RMA', 'QGC do AJ', 'PRJ e Aditivos',
+    'Atas, laudo de credenciamento e de votação da AGC'
+  ];
+  document.getElementById('rj-checklist').innerHTML = checkItems.map(item => {
+    const val = joinVals(getField(f, item)) || '';
+    return `<div class="checklist-row"><span class="checklist-label">${escHtml(item)}</span><span class="kv-val">${renderCheckboxOptions(val)}</span></div>`;
+  }).join('');
+}
+
+function renderCred(f) {
+  set('cr-credor', pick(f, 'Credor (Nome e CNPJ)'));
+  set('cr-advs',   pick(f, 'Advogado(s)', 'Advogados'));
+
+  const classeII  = getFieldsMatching(f, /^Classe II(\s|\(|$)/);
+  const classeIII = getFieldsMatching(f, /^Classe III(\s|\(|$)/);
+  document.getElementById('cr-classe-ii').innerHTML  = classeII.length
+    ? classeII.map(([k, v]) => `<div>${escHtml(k)}: ${escHtml(joinVals(v))}</div>`).join('') : '—';
+  document.getElementById('cr-classe-iii').innerHTML = classeIII.length
+    ? classeIII.map(([k, v]) => `<div>${escHtml(k)}: ${escHtml(joinVals(v))}</div>`).join('') : '—';
+  set('cr-rep', joinVals(getField(f, 'Representatividade (%)')));
+
+  const lastroBlocks   = getBlocks(f, /^LASTRO/i);
+  const garantiaBlocks = getBlocks(f, /^Garantia/i);
+
+  const devedores = new Set(), garantidores = new Set();
+  lastroBlocks.forEach(b => {
+    const em = joinVals(b.fields['Emitente(s)'] || b.fields['Emitente']);
+    const av = joinVals(b.fields['Avalista(s)/Fiador(es)'] || b.fields['Avalista(s)'] || b.fields['Avalista/Fiador']);
+    if (em) devedores.add(em);
+    if (av) garantidores.add(av);
+  });
+  set('cr-devedores',    [...devedores].join('; '));
+  set('cr-garantidores', [...garantidores].join('; '));
+
+  document.getElementById('cr-lastros-container').innerHTML = lastroBlocks.length
+    ? `<div class="mini-table-wrap"><table class="mini-table">
+        <colgroup><col style="width:15%"><col style="width:16%"><col style="width:15%"><col style="width:16%"><col style="width:11%"><col style="width:15%"><col style="width:12%"></colgroup>
+        <thead><tr><th>Lastro</th><th>Cédula</th><th>Emitente(s)</th><th>Avalista(s)/Fiador(es)</th><th>Emissão</th><th>Valor (Emissão)</th><th>Classe</th></tr></thead>
+        <tbody>${lastroBlocks.map(b => {
+          const bf = b.fields;
+          const gar = joinVals(bf['Garantia']);
+          const verGarantiaBtn = gar
+            ? `<button type="button" class="ver-detail-btn" style="text-align:left" data-modal-title="${escAttr('Garantia — ' + b.header)}" data-modal-text="${escAttr(gar)}" onclick="showDetailModal(this)">Ver garantia ▾</button>`
+            : '';
+          return `<tr>
+            <td class="td-mono">${escHtml(b.header)}${verGarantiaBtn}</td>
+            <td>${escHtml(joinVals(bf['Cédula']) || '—')}</td>
+            <td>${escHtml(joinVals(bf['Emitente(s)'] || bf['Emitente']) || '—')}</td>
+            <td>${escHtml(joinVals(bf['Avalista(s)/Fiador(es)'] || bf['Avalista(s)'] || bf['Avalista/Fiador']) || '—')}</td>
+            <td>${escHtml(joinVals(bf['Emissão']) || '—')}</td>
+            <td>${escHtml(joinVals(bf['Valor (Emissão)'] || bf['Valor Arrolado']) || '—')}</td>
+            <td>${escHtml(joinVals(bf['Classe']) || '—')}</td>
+          </tr>`;
+        }).join('')}</tbody>
+      </table></div>`
+    : '<p style="color:var(--text-muted);font-size:12px">Nenhum lastro identificado.</p>';
+
+  document.getElementById('cr-garantias-container').innerHTML = garantiaBlocks.length
+    ? `<div class="mini-table-wrap"><table class="mini-table">
+        <colgroup><col style="width:12%"><col style="width:12%"><col style="width:15%"><col style="width:22%"><col style="width:24%"><col style="width:15%"></colgroup>
+        <thead><tr><th>Garantia</th><th>Matrícula nº</th><th>Comarca</th><th>Proprietário(s)</th><th>Descrição</th><th>Avaliação</th></tr></thead>
+        <tbody>${garantiaBlocks.map(b => {
+          const bf = b.fields;
+          const mat = joinVals(bf['Matrícula nº']);
+          const onus = joinVals(bf['Ônus']);
+          const verOnusBtn = onus
+            ? `<button type="button" class="ver-detail-btn" style="text-align:left" data-modal-title="${escAttr('Ônus vigentes — Matrícula ' + mat)}" data-modal-text="${escAttr(onus)}" onclick="showDetailModal(this)">Ver ônus ▾</button>`
+            : '';
+          return `<tr>
+            <td class="td-mono">${escHtml(b.header)}</td>
+            <td>${escHtml(mat || '—')}</td>
+            <td>${escHtml(joinVals(bf['Comarca']) || '—')}</td>
+            <td>${escHtml(joinVals(bf['Proprietário'] || bf['Proprietários']) || '—')}</td>
+            <td>${escHtml(joinVals(bf['Descrição']) || '—')}${verOnusBtn}</td>
+            <td>${escHtml(joinVals(bf['Avaliação']) || '—')}</td>
+          </tr>`;
+        }).join('')}</tbody>
+      </table></div>`
+    : '<p style="color:var(--text-muted);font-size:12px">Nenhuma garantia identificada.</p>';
+
+  const acaoBlocks = f.blocks.filter(b =>
+    !/^LASTRO/i.test(b.header) && !/^Garantia/i.test(b.header) &&
+    Object.keys(b.fields).some(k => /processo/i.test(k))
+  );
+  document.getElementById('cr-acoes').innerHTML = acaoBlocks.length
+    ? acaoBlocks.map(b => `
+      <div class="card" style="margin-bottom:.75rem">
+        <div class="card-title">${escHtml(b.header)}</div>
+        ${Object.entries(b.fields).map(([k, v]) =>
+          `<div class="kv-row"><span class="kv-label">${escHtml(k)}</span><span class="kv-val">${renderCheckboxOptions(joinVals(v))}</span></div>`
+        ).join('')}
+      </div>`).join('')
+    : '<p style="color:var(--text-muted);font-size:12px">Nenhuma ação judicial identificada.</p>';
+}
+
+function fmtBRL(val) {
+  if (!val || val === '' || val === '0') return '—';
+  const n = parseFloat(String(val).replace(/[^\d.,\-]/g,'').replace(',','.'));
+  if (isNaN(n)) return val;
+  return new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL', maximumFractionDigits: 0 }).format(n);
+}
+function fmtNum(val) {
+  if (!val || val === '' || val === '0') return null;
+  return parseFloat(String(val).replace(/[^\d.,\-]/g,'').replace(',','.')) || null;
+}
+// Números digitados em texto (Word), no formato brasileiro completo — ponto
+// separa milhar, vírgula separa decimal (ex.: "117.215,66"). Diferente de
+// fmtNum, que assume números "crus" do Excel (sem separador de milhar).
+function parseBRLNumber(str) {
+  if (!str) return null;
+  const cleaned = String(str).trim().replace(/[^\d.,\-]/g, '');
+  if (!cleaned) return null;
+  const n = cleaned.includes(',')
+    ? parseFloat(cleaned.replace(/\./g, '').replace(',', '.'))
+    : parseFloat(cleaned);
+  return isNaN(n) ? null : n;
+}
+// Soma uma coluna de qualquer tabela larga extraída do Word cujo nome bata
+// com colName — usado quando não há um campo de "total" já pronto no
+// documento (ex.: endividamento trabalhista, listado por pessoa).
+function sumWideTableColumn(doc, colName) {
+  let total = 0, found = false;
+  doc.tables.forEach(t => {
+    if (!t.columns.includes(colName)) return;
+    t.rows.forEach(r => {
+      const n = parseBRLNumber(r[colName]);
+      if (n !== null) { total += n; found = true; }
+    });
+  });
+  return found ? total : null;
+}
+// "Fração ideal" no Excel é uma fração 0–1 com formato de percentual (ex.: célula
+// mostra "100%" mas o valor bruto lido é 1). Números >1 já vêm como percentual puro.
+function fmtPercent(val) {
+  if (val === undefined || val === null || val === '') return '—';
+  const s = String(val).trim();
+  if (!s) return '—';
+  if (s.includes('%')) return s;
+  const n = parseFloat(s.replace(',', '.'));
+  if (isNaN(n)) return s;
+  const pct = n <= 1 ? n * 100 : n;
+  const rounded = Math.round(pct * 100) / 100;
+  return `${String(rounded).replace('.', ',')}%`;
+}
+
+function renderAtivos(rows) {
+  const tbody = document.getElementById('ativos-tbody');
+  if (!rows || rows.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:2rem">Nenhuma matrícula encontrada.</td></tr>';
+    return;
+  }
+  const COL_MAT='Matrícula', COL_COM='Comarca', COL_PROP='Proprietário Atual';
+  const COL_DESC='Descrição do Imóvel', COL_ONUS='Ônus Vigentes', COL_GARANTIAS='Principais Garantias Vigentes', COL_FRAC='Fração Ideal';
+  const COL_VM='Valor da Avaliação Definitiva (VM)';
+  let totVM=0;
+  tbody.innerHTML = rows.map(row => {
+    const mat=row[COL_MAT]||'—', com=row[COL_COM]||'—', prop=row[COL_PROP]||'—';
+    const desc=row[COL_DESC]||'—', onus=row[COL_ONUS]||'', garantias=row[COL_GARANTIAS]||'—', frac=row[COL_FRAC]||'—';
+    const vmN=fmtNum(row[COL_VM]);
+    if(vmN) totVM+=vmN;
+    const spUrl = ativosUrlMap[mat] || ativosUrlMap[mat.replace(/\./g,'')] || '';
+    const matCell = spUrl
+      ? `<a class="mat-link" href="${spUrl}" target="_blank" rel="noopener noreferrer">${escHtml(mat)} ↗</a>`
+      : `<span class="td-mono">${escHtml(mat)}</span>`;
+    // O texto completo do ônus fica no próprio botão (data-modal-text), não numa
+    // variável JS solta — assim o popup também funciona no painel exportado (.html).
+    const verOnusBtn = onus
+      ? `<button type="button" class="ver-detail-btn" style="text-align:left" data-modal-title="${escAttr('Ônus vigentes — Matrícula ' + mat)}" data-modal-text="${escAttr(onus)}" onclick="showDetailModal(this)">Ver ônus ▾</button>`
+      : '';
+    return `<tr><td class="td-mono">${matCell}</td><td>${escHtml(com)}</td><td>${escHtml(prop)}</td>
+      <td class="td-desc">${escHtml(desc)}</td>
+      <td>${escHtml(garantias)}${verOnusBtn}</td>
+      <td>${fmtPercent(frac)}</td>
+      <td class="td-num">${vmN?fmtBRL(vmN):'—'}</td></tr>`;
+  }).join('');
+  document.getElementById('as-total').textContent = rows.length;
+  document.getElementById('as-vm').textContent    = totVM   ? fmtBRL(totVM)   : '—';
+}
+
+function showDetailModal(btn) {
+  const title = btn.dataset.modalTitle || 'Detalhes';
+  const text = btn.dataset.modalText || '';
+  document.getElementById('onus-modal-title').textContent = title;
+  document.getElementById('onus-modal-content').innerHTML = multilineHtml(text) || '<p style="color:var(--text-muted)">Sem detalhes.</p>';
+  document.getElementById('onus-modal-overlay').style.display = 'flex';
+}
+function closeDetailModal() {
+  document.getElementById('onus-modal-overlay').style.display = 'none';
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDetailModal(); });
+
+// ── Download do painel ────────────────────────────────────────────────────────
+function downloadPainel() {
+  // Captura o HTML atual do painel já renderizado, remove a tela de upload
+  // e produz um arquivo estático autocontido
+  const titulo = document.getElementById('deal-title').textContent || 'painel';
+  const panelEl = document.getElementById('screen-painel');
+
+  // Clona o painel sem os controles de "Novo upload" e "Baixar painel",
+  // mas preservando os links de download dos documentos-fonte (SharePoint)
+  const clone = panelEl.cloneNode(true);
+  const dlButtonsClone = clone.querySelector('#dl-buttons');
+  const dlGroupTarget = clone.querySelector('#deal-header-dl-group');
+  if (dlButtonsClone && dlGroupTarget && dlButtonsClone.innerHTML.trim()) {
+    dlGroupTarget.insertAdjacentHTML('afterbegin', dlButtonsClone.innerHTML);
+  }
+  const topBar = clone.querySelector('.top-bar');
+  if (topBar) topBar.remove();
+
+  const html = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${titulo} — PPA Invista</title>
+<style>
+${document.querySelector('style').textContent}
+#screen-painel { display: block !important; }
+body { background: var(--bg); }
+</style>
+</head>
+<body>
+<header class="app-header">
+  <div class="app-logo">
+    <div class="logo-dot"></div>
+    PPA Invista
+    <span>/ Painel de Deals</span>
+  </div>
+</header>
+${clone.outerHTML}
+<script>
+function showTab(name, el) {
+  document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  el.classList.add('active');
+}
+function escHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/([\/\-–.,])/g, '$1​');
+}
+function joinVals(v) {
+  return Array.isArray(v) ? v.filter(Boolean).join('; ') : (v || '');
+}
+function multilineHtml(v) {
+  const lines = joinVals(v).split('\\n').map(l => l.trim()).filter(Boolean);
+  if (!lines.length) return '';
+  return lines.map(l => '<p style="margin-bottom:6px">' + escHtml(l) + '</p>').join('');
+}
+function showDetailModal(btn) {
+  const title = btn.dataset.modalTitle || 'Detalhes';
+  const text = btn.dataset.modalText || '';
+  document.getElementById('onus-modal-title').textContent = title;
+  document.getElementById('onus-modal-content').innerHTML = multilineHtml(text) || '<p style="color:var(--text-muted)">Sem detalhes.</p>';
+  document.getElementById('onus-modal-overlay').style.display = 'flex';
+}
+function closeDetailModal() {
+  document.getElementById('onus-modal-overlay').style.display = 'none';
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDetailModal(); });
+<\/script>
+</body>
+</html>`;
+
+  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = `painel_${titulo.replace(/[^a-zA-Z0-9]/g,'_')}_${new Date().toISOString().slice(0,10)}.html`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// ── Gerar painel ──────────────────────────────────────────────────────────────
+async function gerarPainel() {
+  const btn = document.getElementById('btn-gerar');
+  btn.textContent = 'Processando…';
+  btn.disabled = true;
+
+  try {
+    if (fileBlobs.prev) state.prev = await readDocx(fileBlobs.prev);
+    if (fileBlobs.rj)   state.rj   = await readDocx(fileBlobs.rj);
+    if (fileBlobs.cred) state.cred = await readDocx(fileBlobs.cred);
+    if (ativosBlob) { updateAtivosUrls(); ativosData = await readXlsx(ativosBlob); }
+
+    if (state.prev) renderPrev(state.prev);
+    if (state.rj)   renderRJ(state.rj);
+    if (state.cred) renderCred(state.cred);
+    if (ativosData.length) renderAtivos(ativosData);
+
+    // Botões de download dos documentos-fonte (URLs de SharePoint, se informadas)
+    const dlLabels = { prev: 'Prévia', rj: 'RJ', cred: 'Créditos' };
+    const dlButtonsHtml = Object.keys(dlLabels)
+      .filter(key => docUrls[key])
+      .map(key => `<a class="btn-dl" href="${docUrls[key]}" target="_blank" rel="noopener noreferrer">↗ ${dlLabels[key]}</a>`)
+      .join('');
+    document.getElementById('dl-buttons').innerHTML = dlButtonsHtml;
+
+    // Visibilidade das abas
+    document.getElementById('tab-btn-previa').style.display   = state.prev        ? '' : 'none';
+    document.getElementById('tab-btn-rj').style.display       = state.rj          ? '' : 'none';
+    document.getElementById('tab-btn-creditos').style.display = state.cred        ? '' : 'none';
+    document.getElementById('tab-btn-ativos').style.display   = ativosData.length ? '' : 'none';
+    document.getElementById('tab-btn-ia').style.display       = (state.prev || state.rj || state.cred) ? '' : 'none';
+
+    const first = state.prev ? 'previa' : state.rj ? 'rj' : state.cred ? 'creditos' : 'ativos';
+    showTab(first, document.getElementById('tab-btn-' + first));
+
+    document.getElementById('screen-upload').style.display = 'none';
+    document.getElementById('screen-painel').style.display = 'block';
+
+    // Dispara análise IA em background
+    if (state.prev || state.rj || state.cred) {
+      gerarAnaliseIA();
+    }
+
+  } catch (err) {
+    alert('Erro ao processar os arquivos: ' + err.message);
+  } finally {
+    btn.textContent = 'Gerar painel';
+    btn.disabled = false;
+  }
+}
+
+function voltarUpload() {
+  document.getElementById('screen-painel').style.display = 'none';
+  document.getElementById('screen-upload').style.display = 'block';
+}
+
+function showTab(name, el) {
+  document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  el.classList.add('active');
+}
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</body>
+</html>
