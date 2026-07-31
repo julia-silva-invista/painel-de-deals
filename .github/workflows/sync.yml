@@ -26,5 +26,5 @@ jobs:
           git add .
           git commit -m "deploy"
           git branch -M main
-          git remote add hf https://olivbernardo:$HF_TOKEN@huggingface.co/spaces/olivbernardo/painel-de-deals
+          git remote add hf https://olivbernardo:$HF_TOKEN@huggingface.co/spaces/olivbernardo/painel_de_deals
           git push hf main --force
