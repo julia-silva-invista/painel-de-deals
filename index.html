@@ -1046,24 +1046,7 @@ a:hover { color:var(--inv-charcoal); }
           <div class="stat-card"><div class="stat-label">Classe IV — ME/EPP</div><div class="stat-val" id="rj-qgc-iv">—</div></div>
         </div>
         <div class="section-title">Plano de recuperação judicial (PRJ)</div>
-        <div class="cards-row">
-          <div class="card">
-            <div class="card-title">Classe II — Garantia real</div>
-            <div class="kv-row"><span class="kv-label">Deságio</span><span class="kv-val" id="rj-ii-desagio">—</span></div>
-            <div class="kv-row"><span class="kv-label">Carência</span><span class="kv-val kv-val-long" id="rj-ii-carencia">—</span></div>
-            <div class="kv-row"><span class="kv-label">Parcelas</span><span class="kv-val" id="rj-ii-parcelas">—</span></div>
-            <div class="kv-row"><span class="kv-label">Juros</span><span class="kv-val" id="rj-ii-juros">—</span></div>
-            <div class="kv-row"><span class="kv-label">Correção</span><span class="kv-val" id="rj-ii-correcao">—</span></div>
-          </div>
-          <div class="card">
-            <div class="card-title">Classe III — Quirografários</div>
-            <div class="kv-row"><span class="kv-label">Deságio</span><span class="kv-val" id="rj-iii-desagio">—</span></div>
-            <div class="kv-row"><span class="kv-label">Carência</span><span class="kv-val kv-val-long" id="rj-iii-carencia">—</span></div>
-            <div class="kv-row"><span class="kv-label">Parcelas</span><span class="kv-val" id="rj-iii-parcelas">—</span></div>
-            <div class="kv-row"><span class="kv-label">Juros</span><span class="kv-val" id="rj-iii-juros">—</span></div>
-            <div class="kv-row"><span class="kv-label">Correção</span><span class="kv-val" id="rj-iii-correcao">—</span></div>
-          </div>
-        </div>
+        <div class="cards-row" id="rj-prj-cards"></div>
         <div class="section-title">Checklist de documentos</div>
         <div class="card" id="rj-checklist"></div>
       </div>
@@ -1396,11 +1379,24 @@ function extractFields(xml) {
   // uma linha de tabela com 1 célula em destaque — precisamos caminhar
   // parágrafos E tabelas em ordem (não só as linhas de tabela) para saber
   // qual título estava vigente quando uma tabela larga apareceu.
-  const tokens = xml.match(/<w:tbl>[\s\S]*?<\/w:tbl>|<w:p\b[\s\S]*?<\/w:p>/g) || [];
+  // Parágrafos vazios costumam vir "self-closing" (<w:p .../>, sem
+  // </w:p>) — sem casar essa forma antes da forma "com conteúdo", o "*?"
+  // lazy do padrão de baixo acaba varrendo até o PRÓXIMO </w:p> do
+  // documento inteiro, engolindo (e descartando) todas as tabelas no meio
+  // do caminho. Por isso o self-closing precisa vir primeiro na alternância.
+  const tokens = xml.match(/<w:tbl>[\s\S]*?<\/w:tbl>|<w:p\b[^>]*\/>|<w:p\b[\s\S]*?<\/w:p>/g) || [];
 
   const root = { header: null, fields: {}, groups: {} };
   const blocks = [];
   const tables = [];
+  // Algumas tabelas de campo/valor (ex.: os 3 resumos "Classe I/II/III" do
+  // Checklist_RJ_Creditos) não têm o banner de 1 célula que abriria um bloco
+  // isolado — cada uma é só uma tabela solta no nível raiz. Sem isolamento,
+  // campos repetidos (ex.: "Representatividade") de tabelas diferentes se
+  // sobrescreveriam em root.fields. scalarTables guarda um snapshot por
+  // tabela para quem precisar ler o valor "da mesma tabela" (ex.: Representa-
+  // tividade da Classe II, não a da última tabela processada).
+  const scalarTables = [];
 
   let current = root;
   let col3Label = null;
@@ -1418,7 +1414,7 @@ function extractFields(xml) {
     wideHeader = null; wideRows = null; wideTitle = null;
   }
 
-  function processRow(row) {
+  function processRow(row, tableFields) {
     const cells = row.match(/<w:tc\b[\s\S]*?<\/w:tc>/g) || [];
 
     // Uma linha com 3+ células, TODAS em destaque, é o cabeçalho de uma
@@ -1466,6 +1462,7 @@ function extractFields(xml) {
       }
       if (!fieldTableHeader && fill0 !== 'E8440A') return;
       pushScalar(current.fields, cellText(cells[0]).trim(), cellText(cells[1]).trim());
+      pushScalar(tableFields, cellText(cells[0]).trim(), cellText(cells[1]).trim());
       return;
     }
 
@@ -1477,7 +1474,7 @@ function extractFields(xml) {
       if (fill0 === 'FFFFFF') {
         // Linha "solo": a 1ª coluna já É o nome do campo (ex.: "Endividamento
         // Fiscal — E-cac" | valor | observação) — não é um grupo/sub-campo.
-        if (c0) pushScalar(current.fields, c0, sub);
+        if (c0) { pushScalar(current.fields, c0, sub); pushScalar(tableFields, c0, sub); }
         return;
       }
       if (fill0 === 'E8440A') col3Label = c0;
@@ -1490,7 +1487,9 @@ function extractFields(xml) {
   tokens.forEach(tok => {
     if (tok.startsWith('<w:tbl>')) {
       const rows = tok.match(/<w:tr[ >][\s\S]*?<\/w:tr>/g) || [];
-      rows.forEach(processRow);
+      const tableFields = {};
+      rows.forEach(row => processRow(row, tableFields));
+      if (Object.keys(tableFields).length) scalarTables.push(tableFields);
       return;
     }
     const text = paraText(tok);
@@ -1503,7 +1502,7 @@ function extractFields(xml) {
   });
   closeWide();
 
-  return { root, blocks, tables };
+  return { root, blocks, tables, scalarTables };
 }
 
 // ── Consultas sobre o documento extraído ────────────────────────────────────
@@ -1517,7 +1516,18 @@ function pick(doc, ...labels) {
     const v = getField(doc, l);
     if (v) return Array.isArray(v) ? v.join(' · ') : v;
   }
+  // Nenhum dos rótulos esperados bateu com o documento — provavelmente o
+  // template usou uma variação de texto que o código ainda não conhece.
+  // console.debug (não alert/erro) só para facilitar depuração futura.
+  if (typeof console !== 'undefined' && console.debug) console.debug('[Painel] Campo não encontrado:', labels);
   return undefined;
+}
+// Como pick(), mas casa o rótulo por regex — usado quando o documento anexa
+// um sufixo variável ao rótulo (ex.: "Classe I – Trabalhistas" em vez de
+// apenas "Classe I", ou "Extraconcursal (não sujeito à RJ)").
+function pickMatching(doc, re) {
+  const hits = getFieldsMatching(doc, re);
+  return hits.length ? joinVals(hits[0][1]) : undefined;
 }
 function getFieldsMatching(doc, re) {
   const out = [];
@@ -1535,6 +1545,21 @@ function getGroup(doc, title) {
   const t = doc.tables && doc.tables.find(t => t.title === title && t.rows.length);
   if (t) return t.rows[0];
   return null;
+}
+// Alguns casos têm crédito em mais de uma classe, cada uma com opções de
+// pagamento diferentes (ex.: "Condições da Classe II", "Condições da Classe
+// III - Opção 01", "- Opção 02" etc.) — em vez de presumir só 2 grupos fixos
+// (Classe II / Classe III), pegamos TODOS os grupos cujo título bate no
+// padrão, na ordem em que aparecem no documento.
+function getGroupsMatching(doc, re) {
+  const out = [];
+  const seen = new Set();
+  const scan = groups => Object.keys(groups).forEach(k => {
+    if (re.test(k) && !seen.has(k)) { seen.add(k); out.push([k, groups[k]]); }
+  });
+  scan(doc.root.groups);
+  doc.blocks.forEach(b => scan(b.groups));
+  return out;
 }
 function getBlocks(doc, re) {
   return doc.blocks.filter(b => re.test(b.header));
@@ -1600,24 +1625,21 @@ ${imoveis}`);
 
   if (state.rj) {
     const f = state.rj;
-    const classeII  = getGroup(f, 'Condições da Classe II')  || {};
-    const classeIII = getGroup(f, 'Condições da Classe III') || {};
+    const prjGroups = getGroupsMatching(f, /Condições da Classe/i);
+    const prjText = prjGroups.map(([title, g]) => `${title} — Deságio: ${g['Deságio']||'—'}; Carência: ${g['Carência']||'—'}; Parcelas: ${g['Parcelas']||'—'}; Juros: ${g['Juros']||'—'}; Correção: ${g['Correção']||'—'}`).join('\n') || '—';
     sections.push(`## CHECKLIST DE RECUPERAÇÃO JUDICIAL
-RJ nº: ${pick(f, 'Recuperação Judicial nº') || '—'}
+RJ nº: ${pick(f, 'Recuperação Judicial nº', 'Número da RJ') || '—'}
 Vara: ${pick(f, 'Vara') || '—'}
 Requerentes: ${pick(f, 'Requerentes (Nome e CPF/CNPJ)') || '—'}
 Adm. judicial: ${pick(f, 'Administrador Judicial Nomeado') || '—'}
 Status: ${pick(f, 'Status') || '—'}
-Classe II — Deságio: ${classeII['Deságio'] || '—'}
-Classe II — Carência: ${classeII['Carência'] || '—'}
-Classe II — Parcelas: ${classeII['Parcelas'] || '—'}
-Classe III — Deságio: ${classeIII['Deságio'] || '—'}
-Classe III — Carência: ${classeIII['Carência'] || '—'}
-Classe III — Parcelas: ${classeIII['Parcelas'] || '—'}
-QGC Classe I: ${pick(f, 'Classe I') || '—'}
-QGC Classe II: ${pick(f, 'Classe II') || '—'}
-QGC Classe III: ${pick(f, 'Classe III') || '—'}
-QGC Classe IV: ${pick(f, 'Classe IV') || '—'}
+Condições do PRJ por classe/opção:
+${prjText}
+QGC Classe I: ${pickMatching(f, /^Classe I\s*[–\-(]/i) || pick(f, 'Classe I') || '—'}
+QGC Classe II: ${pickMatching(f, /^Classe II\s*[–\-(]/i) || pick(f, 'Classe II') || '—'}
+QGC Classe III: ${pickMatching(f, /^Classe III\s*[–\-(]/i) || pick(f, 'Classe III') || '—'}
+QGC Classe IV: ${pickMatching(f, /^Classe IV\s*[–\-(]/i) || pick(f, 'Classe IV') || '—'}
+Total dos créditos arrolados: ${pick(f, 'Total dos créditos arrolados', 'Total de créditos arrolados') || '—'}
 Situação AGC: ${pick(f, 'Situação da AGC') || '—'}`);
   }
 
@@ -1626,8 +1648,11 @@ Situação AGC: ${pick(f, 'Situação da AGC') || '—'}`);
     const classeII  = getFieldsMatching(f, /^Classe II(\s|\(|$)/).map(([k, v]) => `${k}: ${joinVals(v)}`).join(' | ') || '—';
     const classeIII = getFieldsMatching(f, /^Classe III(\s|\(|$)/).map(([k, v]) => `${k}: ${joinVals(v)}`).join(' | ') || '—';
     const lastros = getBlocks(f, /^LASTRO/i).map(b => `- ${b.header}: Cédula ${b.fields['Cédula'] || '—'}; Emitente(s) ${joinVals(b.fields['Emitente(s)'] || b.fields['Emitente'])||'—'}; Avalista(s)/Fiador(es) ${joinVals(b.fields['Avalista(s)/Fiador(es)'] || b.fields['Avalista(s)'] || b.fields['Avalista/Fiador'])||'—'}; Valor (Emissão) ${b.fields['Valor (Emissão)'] || b.fields['Valor Arrolado'] || '—'}; Classe ${b.fields['Classe'] || '—'}`).join('\n') || '—';
-    const garantias = getBlocks(f, /^Garantia/i).map(b => `- ${b.header}: Matrícula ${b.fields['Matrícula nº'] || '—'}, Comarca ${b.fields['Comarca'] || '—'}, Proprietário(s) ${joinVals(b.fields['Proprietário'] || b.fields['Proprietários'])||'—'}, Avaliação ${b.fields['Avaliação'] || '—'}`).join('\n') || '—';
-    const acoes = f.blocks.filter(b => !/^LASTRO/i.test(b.header) && !/^Garantia/i.test(b.header) && Object.keys(b.fields).some(k => /processo/i.test(k)))
+    // Alguns imóveis de garantia vêm rotulados "Imóvel nº N" em vez de
+    // "Garantia nº N" (variação do próprio template) — sem essa alternância,
+    // esse bloco cai silenciosamente nas "Ações judiciais" (ou some).
+    const garantias = getBlocks(f, /^(Garantia|Imóvel)/i).map(b => `- ${b.header}: Matrícula ${b.fields['Matrícula nº'] || '—'}, Comarca ${b.fields['Comarca'] || '—'}, Proprietário(s) ${joinVals(b.fields['Proprietário'] || b.fields['Proprietários'])||'—'}, Avaliação ${b.fields['Avaliação'] || '—'}`).join('\n') || '—';
+    const acoes = f.blocks.filter(b => !/^LASTRO/i.test(b.header) && !/^(Garantia|Imóvel)/i.test(b.header) && Object.keys(b.fields).some(k => /processo/i.test(k)))
       .map(b => `- ${b.header}: ` + Object.entries(b.fields).map(([k, v]) => `${k}: ${joinVals(v)}`).join('; ')).join('\n') || '—';
     sections.push(`## ANÁLISE DE CRÉDITOS EM RJ
 Credor: ${pick(f, 'Credor (Nome e CNPJ)') || '—'}
@@ -1639,7 +1664,7 @@ Garantia(s) (nível crédito): ${joinVals(getField(f, 'Garantia(s)')) || '—'}
 Lastros (${getBlocks(f, /^LASTRO/i).length} identificados):
 ${lastros}
 
-Garantias reais (${getBlocks(f, /^Garantia/i).length} identificadas):
+Garantias reais (${getBlocks(f, /^(Garantia|Imóvel)/i).length} identificadas):
 ${garantias}
 
 Ações judiciais relacionadas ao crédito (tipo real, não assumir "execução"):
@@ -1902,12 +1927,28 @@ function renderCheckboxOptions(str) {
   }).join(' ');
 }
 
+// Quando o valor de um campo é (ou contém) um link, não mostramos o
+// endereço cru — em vez disso um botão "Abrir link ↗" centralizado, embaixo
+// do resto do texto do quadrado, que abre a URL numa aba nova.
+const URL_RE = /(https?:\/\/[^\s<>"')]+|www\.[^\s<>"')]+\.[a-z]{2,}[^\s<>"')]*)/i;
+function linkifyValueHtml(s) {
+  const m = s.match(URL_RE);
+  if (!m) return null;
+  let url = m[0].replace(/[.,;:)]+$/, '');
+  if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+  const rest = (s.slice(0, m.index) + s.slice(m.index + m[0].length)).trim();
+  return (rest ? `<div>${escHtml(rest)}</div>` : '')
+    + `<div style="text-align:center;margin-top:${rest ? '8px' : '0'}"><button type="button" class="ver-detail-btn" onclick="window.open('${escAttr(url)}','_blank','noopener')">Abrir link ↗</button></div>`;
+}
 function set(id, value) {
   const el = document.getElementById(id);
   if (!el) return;
   const v = Array.isArray(value) ? value.filter(Boolean).join(' · ') : value;
   const s = v && v.trim ? (v.trim() || '—') : (v || '—');
-  if (typeof s === 'string' && /[☐☑]/.test(s)) {
+  const linkHtml = typeof s === 'string' && URL_RE.test(s) ? linkifyValueHtml(s) : null;
+  if (linkHtml) {
+    el.innerHTML = linkHtml;
+  } else if (typeof s === 'string' && /[☐☑]/.test(s)) {
     el.innerHTML = renderCheckboxOptions(s);
   } else {
     el.textContent = s;
@@ -2236,7 +2277,7 @@ function setDealHeader(nome, advogada, data) {
 
 function renderRJ(f) {
   setDealHeader(pick(f, 'Nome do Caso'), pick(f, 'Advogadas Responsáveis', 'Advogada Responsável'), pick(f, 'Data da Análise'));
-  set('rj-numero',      pick(f, 'Recuperação Judicial nº'));
+  set('rj-numero',      pick(f, 'Recuperação Judicial nº', 'Número da RJ'));
   set('rj-vara',        pick(f, 'Vara'));
   setParty('rj-requerentes', pick(f, 'Requerentes (Nome e CPF/CNPJ)'));
   set('rj-advs',        pick(f, 'Advogados dos Requerentes'));
@@ -2245,24 +2286,31 @@ function renderRJ(f) {
   set('rj-deferimento', pick(f, 'Data do Deferimento'));
   set('rj-status',      pick(f, 'Status'));
 
-  const classeII  = getGroup(f, 'Condições da Classe II')  || {};
-  const classeIII = getGroup(f, 'Condições da Classe III') || {};
-  set('rj-ii-desagio',   classeII['Deságio']);
-  set('rj-ii-carencia',  classeII['Carência']);
-  set('rj-ii-parcelas',  classeII['Parcelas']);
-  set('rj-ii-juros',     classeII['Juros']);
-  set('rj-ii-correcao',  classeII['Correção']);
-  set('rj-iii-desagio',  classeIII['Deságio']);
-  set('rj-iii-carencia', classeIII['Carência']);
-  set('rj-iii-parcelas', classeIII['Parcelas']);
-  set('rj-iii-juros',    classeIII['Juros']);
-  set('rj-iii-correcao', classeIII['Correção']);
+  const prjGroups = getGroupsMatching(f, /Condições da Classe/i);
+  document.getElementById('rj-prj-cards').innerHTML = prjGroups.length
+    ? prjGroups.map(([title, g]) => `
+        <div class="card">
+          <div class="card-title">${escHtml(title.replace(/^Condições da\s+/i, '').trim())}</div>
+          <div class="kv-row"><span class="kv-label">Deságio</span><span class="kv-val">${escHtml(g['Deságio'] || '—')}</span></div>
+          <div class="kv-row"><span class="kv-label">Carência</span><span class="kv-val kv-val-long">${escHtml(g['Carência'] || '—')}</span></div>
+          <div class="kv-row"><span class="kv-label">Parcelas</span><span class="kv-val">${escHtml(g['Parcelas'] || '—')}</span></div>
+          <div class="kv-row"><span class="kv-label">Juros</span><span class="kv-val">${escHtml(g['Juros'] || '—')}</span></div>
+          <div class="kv-row"><span class="kv-label">Correção</span><span class="kv-val">${escHtml(g['Correção'] || '—')}</span></div>
+        </div>`).join('')
+    : '<p style="color:var(--text-muted);font-size:12px">Nenhuma condição de PRJ identificada.</p>';
 
-  set('rj-qgc-i',   pick(f, 'Classe I'));
-  set('rj-qgc-ii',  pick(f, 'Classe II'));
-  set('rj-qgc-iii', pick(f, 'Classe III'));
-  set('rj-qgc-iv',  pick(f, 'Classe IV'));
-  set('rj-qgc-total', pick(f, 'Total dos créditos arrolados'));
+  // O QGC (total da classe, o que esta aba quer) costuma anexar o nome da
+  // classe ao rótulo (ex.: "Classe I – Trabalhistas", "Classe II – Garantia
+  // Real"). Documentos como o Checklist_RJ_Creditos também têm um "Classe I"/
+  // "Classe II"/"Classe III" SEM sufixo, mas esse é o valor daquele credor
+  // específico, não o total da classe — por isso a versão com sufixo (–, -
+  // ou parênteses logo após o número) tem prioridade; só cai para o rótulo
+  // solto quando o documento não tiver a variante com sufixo.
+  set('rj-qgc-i',   pickMatching(f, /^Classe I\s*[–\-(]/i)   || pick(f, 'Classe I'));
+  set('rj-qgc-ii',  pickMatching(f, /^Classe II\s*[–\-(]/i)  || pick(f, 'Classe II'));
+  set('rj-qgc-iii', pickMatching(f, /^Classe III\s*[–\-(]/i) || pick(f, 'Classe III'));
+  set('rj-qgc-iv',  pickMatching(f, /^Classe IV\s*[–\-(]/i)  || pick(f, 'Classe IV'));
+  set('rj-qgc-total', pick(f, 'Total dos créditos arrolados', 'Total de créditos arrolados'));
   set('rj-agc-status', pick(f, 'Situação da AGC'));
   const conv1 = pick(f, '1ª Convocação', '1a Convocação');
   const conv2 = pick(f, '2ª Convocação', '2a Convocação');
@@ -2283,26 +2331,54 @@ function renderRJ(f) {
 }
 
 function renderCred(f) {
+  // Alguns templates (ex.: Checklist_RJ_Creditos) descrevem cada classe numa
+  // tabela própria (sem banner de bloco isolando-a), cada uma repetindo os
+  // campos "Credor", "Advogado(s)" e "Representatividade" — se lêssemos de
+  // f.fields direto (achatado), essas 3 tabelas se acumulariam num único
+  // campo (o Credor apareceria 2-3x repetido, e não daria pra saber qual
+  // Representatividade é de qual classe). scalarTables (um snapshot por
+  // tabela do documento) evita isso: buscamos a tabela que contém aquele
+  // "Classe N" e lemos Credor/Advogado(s)/Representatividade dali.
+  function classeFromScalarTables(re) {
+    const t = (f.scalarTables || []).find(t => Object.keys(t).some(k => re.test(k)));
+    if (!t) return { valor: undefined, rep: undefined, credor: undefined, advs: undefined };
+    const classeKey = Object.keys(t).find(k => re.test(k));
+    return {
+      valor: joinVals(t[classeKey]),
+      rep: joinVals(t['Representatividade (%)'] || t['Representatividade']),
+      credor: joinVals(t['Credor (Nome e CNPJ)']),
+      advs: joinVals(t['Advogado(s)'] || t['Advogados'])
+    };
+  }
+
   // Credor e Advogado(s) do Credor no mesmo quadrinho — mesmo padrão do
   // Desalinhados pra Exequente(s) (nome em negrito + "Adv.:" por linha).
-  const nomeCredor = pick(f, 'Credor (Nome e CNPJ)');
+  // Lido da 1ª tabela de classe com crédito (não do campo achatado, que
+  // juntaria o mesmo credor repetido 2-3x, uma vez por classe).
+  const credorInfo = [/^Classe I(\s|\(|$)/i, /^Classe II(\s|\(|$)/i, /^Classe III(\s|\(|$)/i]
+    .map(classeFromScalarTables).find(c => c.credor) || {};
+  const nomeCredor = credorInfo.credor || pick(f, 'Credor (Nome e CNPJ)');
   const credorEl = document.getElementById('cr-credor');
   if (!nomeCredor) {
     credorEl.textContent = '—';
   } else {
-    const advs = joinVals(pick(f, 'Advogado(s)', 'Advogados')).split(/;\s*/).map(a => a.trim()).filter(Boolean);
+    const advs = (credorInfo.advs || joinVals(pick(f, 'Advogado(s)', 'Advogados'))).split(/;\s*/).map(a => a.trim()).filter(Boolean);
     credorEl.innerHTML = `<div class="party-card">
       <div class="parte-nome">${escHtml(nomeCredor)}</div>
       ${advs.map(a => `<div class="parte-adv">Adv.: ${escHtml(a)}</div>`).join('')}
     </div>`;
   }
-
-  // Detalhamento do crédito: um par de quadrinhos (Classe X + Representatividade)
-  // por classe que realmente tiver valor — classes sem crédito não aparecem.
   const classePairs = [
-    { classe: 'Classe II',  valor: pick(f, 'Classe II'),  rep: pick(f, 'Representatividade (%) — Classe II', 'Representatividade (%) - Classe II') },
-    { classe: 'Classe III', valor: pick(f, 'Classe III'), rep: pick(f, 'Representatividade (%) — Classe III', 'Representatividade (%) - Classe III') }
-  ].filter(p => p.valor);
+    { classe: 'Classe I',   ...classeFromScalarTables(/^Classe I(\s|\(|$)/i) },
+    { classe: 'Classe II',  ...classeFromScalarTables(/^Classe II(\s|\(|$)/i) },
+    { classe: 'Classe III', ...classeFromScalarTables(/^Classe III(\s|\(|$)/i) }
+  ].map(p => ({
+    ...p,
+    // Fallback para o padrão antigo (rótulo composto exato), caso o
+    // documento não tenha gerado uma scalarTable própria para essa classe.
+    valor: p.valor || pick(f, p.classe),
+    rep: p.rep || pick(f, `Representatividade (%) — ${p.classe}`, `Representatividade (%) - ${p.classe}`)
+  })).filter(p => p.valor);
   const detalhamentoEl = document.getElementById('cr-detalhamento');
   let detalhamentoHtml = classePairs.map(p => `
       <div class="subcard"><div class="subcard-title">${escHtml(p.classe)}</div><div class="val">${escHtml(p.valor)}</div></div>
@@ -2310,7 +2386,7 @@ function renderCred(f) {
     ).join('');
   // Extraconcursal não tem representatividade própria — só a caixinha do
   // valor, do mesmo tamanho/estilo das demais, na mesma linha.
-  const extraconcursal = pick(f, 'Extraconcursal');
+  const extraconcursal = pick(f, 'Extraconcursal') || pickMatching(f, /^Extraconcursal(\s|\(|$)/i);
   if (extraconcursal) {
     detalhamentoHtml += `<div class="subcard"><div class="subcard-title">Extraconcursal</div><div class="val">${escHtml(extraconcursal)}</div></div>`;
   }
@@ -2318,7 +2394,9 @@ function renderCred(f) {
     || '<p style="color:var(--text-muted);font-size:12px">Nenhuma classe com crédito identificada.</p>';
 
   const lastroBlocks   = getBlocks(f, /^LASTRO/i);
-  const garantiaBlocks = getBlocks(f, /^Garantia/i);
+  // Alguns imóveis de garantia vêm rotulados "Imóvel nº N" em vez de
+  // "Garantia nº N" (variação do próprio template).
+  const garantiaBlocks = getBlocks(f, /^(Garantia|Imóvel)/i);
 
   const devedores = new Set(), garantidores = new Set();
   lastroBlocks.forEach(b => {
@@ -2377,7 +2455,7 @@ function renderCred(f) {
     : '<p style="color:var(--text-muted);font-size:12px">Nenhuma garantia identificada.</p>';
 
   const acaoBlocks = f.blocks.filter(b =>
-    !/^LASTRO/i.test(b.header) && !/^Garantia/i.test(b.header) &&
+    !/^LASTRO/i.test(b.header) && !/^(Garantia|Imóvel)/i.test(b.header) &&
     Object.keys(b.fields).some(k => /processo/i.test(k))
   );
   document.getElementById('cr-acoes').innerHTML = acaoBlocks.length
