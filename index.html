@@ -1662,11 +1662,25 @@ function getGroup(doc, title) {
 function getGroupsMatching(doc, re) {
   const out = [];
   const seen = new Set();
+  const add = (title, values) => {
+    if (re.test(title) && !seen.has(title)) {
+      seen.add(title);
+      out.push([title, values]);
+    }
+  };
   const scan = groups => Object.keys(groups).forEach(k => {
-    if (re.test(k) && !seen.has(k)) { seen.add(k); out.push([k, groups[k]]); }
+    add(k, groups[k]);
   });
   scan(doc.root.groups);
   doc.blocks.forEach(b => scan(b.groups));
+  // Nos checklists mais novos, as condições aparecem como uma tabela larga
+  // (Deságio | Carência | Parcelas | Juros | Correção) logo abaixo do título
+  // da classe/opção. O extrator guarda esse formato em doc.tables, não em
+  // groups; inclua a primeira linha de dados para que os cartões sejam
+  // exibidos da mesma forma que no modelo antigo.
+  (doc.tables || []).forEach(t => {
+    if (t.title && t.rows && t.rows.length) add(t.title, t.rows[0]);
+  });
   return out;
 }
 function getBlocks(doc, re) {
