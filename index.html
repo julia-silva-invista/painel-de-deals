@@ -99,6 +99,29 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .tab-btn.ai-tab.active { color: var(--purple); border-bottom-color: var(--purple); }
 .tab-panel { display: none; padding: 1.5rem; }
 .tab-panel.active { display: block; }
+.credit-subtabs { display:flex; gap:6px; margin:0 0 1.25rem; padding:5px; overflow-x:auto; background:var(--surface-alt); border:1px solid var(--border); border-radius:var(--radius-lg); }
+.credit-subtabs[hidden] { display:none; }
+.credit-subtab-item { flex:1 0 auto; min-width:150px; display:flex; align-items:center; gap:4px; padding:4px 5px 4px 9px; border:1px solid transparent; border-radius:var(--radius); color:var(--text-secondary); cursor:pointer; }
+.credit-subtab-item:hover { color:var(--text-primary); background:rgba(255,255,255,.65); }
+.credit-subtab-item.active { color:var(--accent-text); background:var(--surface); border-color:var(--border); box-shadow:0 1px 2px rgba(0,0,0,.05); }
+.credit-subtab-name { min-width:95px; width:100%; padding:4px 2px; border:0; border-bottom:1px dashed transparent; outline:none; background:transparent; color:inherit; font:inherit; font-size:12px; font-weight:600; }
+.credit-subtab-name:hover, .credit-subtab-name:focus { border-bottom-color:var(--border-strong); }
+.credit-remove-x { flex:0 0 auto; width:24px; height:24px; display:inline-flex; align-items:center; justify-content:center; border:0; border-radius:50%; background:transparent; color:var(--text-muted); font-size:16px; line-height:1; cursor:pointer; }
+.credit-remove-x:hover { background:var(--danger-bg); color:var(--danger); }
+.credit-panel { display:none; }
+.credit-panel.active { display:block; }
+.credit-panel-actions { display:flex; justify-content:flex-end; margin-bottom:.75rem; }
+.credit-upload-list { display:flex; flex-direction:column; gap:8px; width:100%; margin-top:10px; }
+.credit-upload-item { padding:10px; border:1px solid var(--border); border-radius:var(--radius); background:rgba(255,255,255,.72); }
+.credit-upload-main { display:grid; grid-template-columns:minmax(130px,.8fr) minmax(170px,1.4fr) auto auto; gap:8px; align-items:center; }
+.credit-upload-name { min-width:0; width:100%; padding:6px 8px; border:1px solid var(--border-strong); border-radius:var(--radius); background:var(--surface); color:var(--text-primary); font:inherit; font-size:12px; font-weight:600; }
+.credit-upload-file { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--text-muted); font-size:11px; }
+.credit-add-btn { align-self:flex-start; margin-top:9px; padding:6px 10px; border:1px dashed var(--border-strong); border-radius:var(--radius); background:var(--surface); color:var(--accent-text); font:inherit; font-size:11px; font-weight:600; cursor:pointer; }
+.credit-add-btn:hover { border-style:solid; border-color:var(--accent); background:var(--accent-bg); }
+.upload-slot:not(.filled) .credit-add-btn { display:none; }
+@media (max-width:700px) { .credit-upload-main { grid-template-columns:1fr auto; } .credit-upload-file { grid-column:1 / -1; grid-row:2; } }
+.popup-more-row { display:flex; justify-content:center; gap:6px; width:100%; margin-top:8px; }
+.popup-more-row .ver-detail-btn { width:auto; margin-left:auto; margin-right:auto; }
 
 /* Sections */
 .section-title { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; color: var(--text-muted); margin: 1.5rem 0 .75rem; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
@@ -327,8 +350,8 @@ body { background:#F2F3F4; }
 .mini-table .td-desc, .mini-table .td-onus {
   text-align:justify !important; text-justify:inter-word; hyphens:auto; vertical-align:middle;
 }
-#ativos-tbody td:nth-child(4), #cr-garantias-container td:nth-child(5), #p-imoveis-container td:nth-child(5),
-#cr-lastros-container td:nth-child(1), #cr-lastros-container td:nth-child(2),
+#ativos-tbody td:nth-child(4), .credit-garantias-container td:nth-child(5), #p-imoveis-container td:nth-child(5),
+.credit-lastros-container td:nth-child(1), .credit-lastros-container td:nth-child(2),
 #p-processos-container td:nth-child(2), #p-processos-container td:nth-child(3) {
   text-align:justify !important; text-justify:inter-word; hyphens:auto;
 }
@@ -720,10 +743,10 @@ a:hover { color:var(--inv-charcoal); }
 }
 
 /* Créditos em RJ — justificação e botão centralizado. */
-#cr-lastros-container td:nth-child(1) { text-align:justify !important; text-justify:inter-word; hyphens:manual; }
-#cr-garantias-container td:nth-child(4) { text-align:justify !important; text-justify:inter-word; hyphens:manual; }
-#cr-lastros-container td:nth-child(1) .ver-detail-btn,
-#cr-garantias-container .ver-detail-btn { margin-left:auto; margin-right:auto; text-align:center; }
+.credit-lastros-container td:nth-child(1) { text-align:justify !important; text-justify:inter-word; hyphens:manual; }
+.credit-garantias-container td:nth-child(4) { text-align:justify !important; text-justify:inter-word; hyphens:manual; }
+.credit-lastros-container td:nth-child(1) .ver-detail-btn,
+.credit-garantias-container .ver-detail-btn { margin-left:auto; margin-right:auto; text-align:center; }
 
 
 /* ══ v8 — Requerentes: rótulo dentro da moldura cinza ════════════════════════ */
@@ -841,20 +864,21 @@ a:hover { color:var(--inv-charcoal); }
     </div>
 
     <div class="upload-slot" id="slot-cred">
-      <input type="file" id="input-cred" accept=".docx" onchange="handleFile(this,'cred')" style="display:none">
-      <div class="slot-row" onclick="document.getElementById('input-cred').click()">
+      <input type="file" id="input-cred" accept=".docx" multiple onchange="handleFile(this,'cred')" style="display:none">
+      <div class="slot-row" onclick="openCreditPicker(event)">
         <div class="slot-left">
           <div class="slot-icon">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
           </div>
           <div>
-            <div class="slot-label">Análise de Créditos em RJ</div>
-            <div class="slot-hint" id="hint-cred">Clique para selecionar o .docx</div>
+            <div class="slot-label">Análises de Créditos em RJ</div>
+            <div class="slot-hint" id="hint-cred">Clique para selecionar um ou mais .docx</div>
           </div>
         </div>
         <span class="slot-badge pending" id="badge-cred">Pendente</span>
       </div>
-      <input class="slot-url" id="url-cred" type="url" placeholder="Link do SharePoint do documento (opcional)" oninput="updateUrl('cred')">
+      <div id="cred-url-list" class="credit-upload-list"></div>
+      <button type="button" class="credit-add-btn" onclick="openCreditPicker(event)">+ Adicionar outro crédito</button>
     </div>
 
     <div class="upload-slot" id="slot-ativos">
@@ -1053,21 +1077,8 @@ a:hover { color:var(--inv-charcoal); }
 
       <!-- ABA CRÉDITOS -->
       <div id="tab-creditos" class="tab-panel">
-        <div class="section-title">Crédito arrolado</div>
-        <div class="field" style="margin-bottom:1rem"><label>Credores</label><div class="val" id="cr-credor">—</div></div>
-        <div class="section-title">Detalhamento do crédito</div>
-        <div class="grid-4" id="cr-detalhamento"></div>
-        <div class="section-title">Partes</div>
-        <div class="grid">
-          <div class="field"><label>Devedor(es)</label><div class="val party-box" id="cr-devedores">—</div></div>
-          <div class="field"><label>Garantidor(es)</label><div class="val party-box" id="cr-garantidores">—</div></div>
-        </div>
-        <div class="section-title">Lastros</div>
-        <div id="cr-lastros-container"></div>
-        <div class="section-title">Garantias</div>
-        <div id="cr-garantias-container"></div>
-        <div class="section-title">Ações judiciais</div>
-        <div id="cr-acoes"></div>
+        <div id="credit-subtabs" class="credit-subtabs" hidden></div>
+        <div id="credit-panels"></div>
       </div>
 
       <!-- ABA ATIVOS IMOBILIÁRIOS -->
@@ -1177,8 +1188,9 @@ a:hover { color:var(--inv-charcoal); }
 
 <script>
 // ── Estado ────────────────────────────────────────────────────────────────────
-const state = { prev: null, rj: null, cred: null };
-const fileBlobs = { prev: null, rj: null, cred: null };
+const state = { prev: null, rj: null, cred: [] };
+const fileBlobs = { prev: null, rj: null, cred: [] };
+let creditNames = [];
 let ativosBlob = null;
 let ativosData = [];
 let ativosUrlMap = {};
@@ -1273,6 +1285,25 @@ let activeDetailButton = null;
 
 // ── Upload ────────────────────────────────────────────────────────────────────
 function handleFile(input, key) {
+  if (key === 'cred') {
+    const newFiles = Array.from(input.files || []);
+    if (!newFiles.length) return;
+    if (pendingCreditReplacement !== null && fileBlobs.cred[pendingCreditReplacement]) {
+      fileBlobs.cred[pendingCreditReplacement] = newFiles.shift();
+      pendingCreditReplacement = null;
+    }
+    newFiles.forEach(file => {
+      fileBlobs.cred.push(file);
+      let number = 1;
+      while (creditNames.some(name => name.trim().toLocaleLowerCase('pt-BR') === `crédito ${number}`.toLocaleLowerCase('pt-BR'))) number++;
+      creditNames.push(`Crédito ${number}`);
+      docUrls.cred.push('');
+    });
+    input.value = '';
+    refreshCreditUploadList();
+    checkBtn();
+    return;
+  }
   const file = input.files[0];
   if (!file) return;
   fileBlobs[key] = file;
@@ -1296,14 +1327,91 @@ function handleXlsx(input) {
 }
 
 function checkBtn() {
-  const anyDoc = Object.values(fileBlobs).some(Boolean) || !!ativosBlob;
+  const anyDoc = Object.values(fileBlobs).some(value => Array.isArray(value) ? value.length > 0 : !!value) || !!ativosBlob;
   document.getElementById('btn-gerar').disabled = !anyDoc;
 }
 
-const docUrls = { prev: '', rj: '', cred: '', ativos: '' };
+const docUrls = { prev: '', rj: '', cred: [], ativos: '' };
 function updateUrl(key) {
   const raw = document.getElementById('url-' + key).value.trim();
   docUrls[key] = raw.startsWith('//') ? 'https:' + raw : raw;
+}
+function openCreditPicker(event) {
+  event?.stopPropagation();
+  pendingCreditReplacement = null;
+  document.getElementById('input-cred').click();
+}
+function creditLabel(index) {
+  return (creditNames[index] || '').trim() || `Crédito ${index + 1}`;
+}
+function renameCredit(index, value, source) {
+  creditNames[index] = value;
+  document.querySelectorAll(`[data-credit-name-index="${index}"]`).forEach(input => {
+    if (input !== source) input.value = value;
+    input.setAttribute('value', value);
+  });
+  buildDocumentButtons();
+}
+function refreshCreditUploadSummary() {
+  const count = fileBlobs.cred.length;
+  const slot = document.getElementById('slot-cred');
+  const hint = document.getElementById('hint-cred');
+  const badge = document.getElementById('badge-cred');
+  slot.classList.toggle('filled', count > 0);
+  hint.textContent = count === 0
+    ? 'Clique para selecionar um ou mais .docx'
+    : count === 1 ? fileBlobs.cred[0].name : `${count} checklists adicionados`;
+  badge.textContent = count === 0 ? 'Pendente' : count === 1 ? 'Carregado' : `${count} carregados`;
+  badge.className = 'slot-badge ' + (count ? 'done' : 'pending');
+}
+function refreshCreditUploadList() {
+  const container = document.getElementById('cred-url-list');
+  container.innerHTML = fileBlobs.cred.map((file, index) => `
+    <div class="credit-upload-item">
+      <div class="credit-upload-main">
+        <input class="credit-upload-name" data-credit-name-index="${index}" value="${escAttr(creditLabel(index))}"
+          aria-label="Nome do crédito ${index + 1}" oninput="renameCredit(${index},this.value,this)">
+        <span class="credit-upload-file" title="${escAttr(file.name)}">${escHtml(file.name)}</span>
+        <button type="button" class="toolbar-btn" onclick="replaceCreditFromUpload(${index},event)">Substituir arquivo</button>
+        <button type="button" class="credit-remove-x" aria-label="Remover ${escAttr(creditLabel(index))}" title="Remover crédito" onclick="removeCredit(${index},event)">×</button>
+      </div>
+      <input class="slot-url" id="url-cred-${index}" type="url"
+        placeholder="Link do SharePoint deste documento (opcional)"
+        value="${escAttr(docUrls.cred[index] || '')}" oninput="updateCreditUrl(${index})">
+    </div>`).join('');
+  refreshCreditUploadSummary();
+}
+function updateCreditUrl(index) {
+  const raw = document.getElementById('url-cred-' + index)?.value.trim() || '';
+  docUrls.cred[index] = raw.startsWith('//') ? 'https:' + raw : raw;
+}
+let pendingCreditReplacement = null;
+function replaceCreditFromUpload(index, event) {
+  event?.stopPropagation();
+  pendingCreditReplacement = index;
+  document.getElementById('input-cred').click();
+}
+function removeCredit(index, event) {
+  event?.stopPropagation();
+  fileBlobs.cred.splice(index, 1);
+  docUrls.cred.splice(index, 1);
+  creditNames.splice(index, 1);
+  if (index < state.cred.length) state.cred.splice(index, 1);
+  refreshCreditUploadList();
+  checkBtn();
+  if (document.getElementById('screen-painel').style.display === 'block') {
+    if (state.cred.length) {
+      renderCreditTabs(Math.min(index, state.cred.length - 1));
+    } else {
+      document.getElementById('tab-btn-creditos').style.display = 'none';
+      const fallback = ['previa','rj','ativos','ia'].find(name => {
+        const btn = document.getElementById('tab-btn-' + name);
+        return btn && btn.style.display !== 'none';
+      });
+      if (fallback) showTab(fallback, document.getElementById('tab-btn-' + fallback));
+    }
+    buildDocumentButtons();
+  }
 }
 function updateAtivosUrls() {
   const raw = document.getElementById('textarea-ativos-urls').value;
@@ -1643,8 +1751,7 @@ Total dos créditos arrolados: ${pick(f, 'Total dos créditos arrolados', 'Total
 Situação AGC: ${pick(f, 'Situação da AGC') || '—'}`);
   }
 
-  if (state.cred) {
-    const f = state.cred;
+  state.cred.forEach((f, creditIndex) => {
     const classeII  = getFieldsMatching(f, /^Classe II(\s|\(|$)/).map(([k, v]) => `${k}: ${joinVals(v)}`).join(' | ') || '—';
     const classeIII = getFieldsMatching(f, /^Classe III(\s|\(|$)/).map(([k, v]) => `${k}: ${joinVals(v)}`).join(' | ') || '—';
     const lastros = getBlocks(f, /^LASTRO/i).map(b => `- ${b.header}: Cédula ${b.fields['Cédula'] || '—'}; Emitente(s) ${joinVals(b.fields['Emitente(s)'] || b.fields['Emitente'])||'—'}; Avalista(s)/Fiador(es) ${joinVals(b.fields['Avalista(s)/Fiador(es)'] || b.fields['Avalista(s)'] || b.fields['Avalista/Fiador'])||'—'}; Valor (Emissão) ${b.fields['Valor (Emissão)'] || b.fields['Valor Arrolado'] || '—'}; Classe ${b.fields['Classe'] || '—'}`).join('\n') || '—';
@@ -1654,7 +1761,7 @@ Situação AGC: ${pick(f, 'Situação da AGC') || '—'}`);
     const garantias = getBlocks(f, /^(Garantia|Imóvel)/i).map(b => `- ${b.header}: Matrícula ${b.fields['Matrícula nº'] || '—'}, Comarca ${b.fields['Comarca'] || '—'}, Proprietário(s) ${joinVals(b.fields['Proprietário'] || b.fields['Proprietários'])||'—'}, Avaliação ${b.fields['Avaliação'] || '—'}`).join('\n') || '—';
     const acoes = f.blocks.filter(b => !/^LASTRO/i.test(b.header) && !/^(Garantia|Imóvel)/i.test(b.header) && Object.keys(b.fields).some(k => /processo/i.test(k)))
       .map(b => `- ${b.header}: ` + Object.entries(b.fields).map(([k, v]) => `${k}: ${joinVals(v)}`).join('; ')).join('\n') || '—';
-    sections.push(`## ANÁLISE DE CRÉDITOS EM RJ
+    sections.push(`## ANÁLISE DE CRÉDITOS EM RJ — CRÉDITO ${creditIndex + 1}
 Credor: ${pick(f, 'Credor (Nome e CNPJ)') || '—'}
 Advogado(s): ${pick(f, 'Advogado(s)', 'Advogados') || '—'}
 Valores por classe: ${classeII} | ${classeIII}
@@ -1669,7 +1776,7 @@ ${garantias}
 
 Ações judiciais relacionadas ao crédito (tipo real, não assumir "execução"):
 ${acoes}`);
-  }
+  });
 
   return `Você é um analista sênior de crédito e recuperação judicial da equipe PPA da Invista. Analise os seguintes documentos de um deal e produza uma análise estruturada em JSON.
 
@@ -1940,11 +2047,44 @@ function linkifyValueHtml(s) {
   return (rest ? `<div>${escHtml(rest)}</div>` : '')
     + `<div style="text-align:center;margin-top:${rest ? '8px' : '0'}"><button type="button" class="ver-detail-btn" onclick="window.open('${escAttr(url)}','_blank','noopener')">Abrir link ↗</button></div>`;
 }
+// Convenção do checklist: todo trecho escrito como [* conteúdo *] sai do
+// texto principal e vira um botão centralizado "Ver mais". O conteúdo fica
+// disponível no mesmo modal usado pelos demais detalhes do painel.
+const CHECKLIST_DETAIL_RE = /\[\*\s*([\s\S]*?)\s*\*\]/g;
+function hasChecklistDetail(value) {
+  return typeof value === 'string' && /\[\*[\s\S]*?\*\]/.test(value);
+}
+function renderChecklistDetail(value, renderMain = escHtml, title = 'Detalhes') {
+  const raw = String(value || '');
+  const details = [];
+  const main = raw.replace(new RegExp(CHECKLIST_DETAIL_RE.source, 'g'), (_, detail) => {
+    const cleaned = detail.trim();
+    if (cleaned) details.push(cleaned);
+    return ' ';
+  }).replace(/[ \t]+\n/g, '\n').replace(/\n[ \t]+/g, '\n').replace(/[ \t]{2,}/g, ' ').trim();
+  const mainHtml = main ? renderMain(main) : '';
+  if (!details.length) return mainHtml;
+  const buttons = details.map(detail => `<button type="button" class="ver-detail-btn" data-modal-title="${escAttr(title)}" data-modal-text="${escAttr(detail)}" onclick="showDetailModal(this)">Ver mais ▾</button>`).join('');
+  return `${mainHtml}<span class="popup-more-row">${buttons}</span>`;
+}
+function renderChecklistValue(value, title = 'Detalhes') {
+  const text = joinVals(value);
+  if (!text) return '—';
+  if (hasChecklistDetail(text)) return renderChecklistDetail(text, segment => renderCheckboxOptions(segment), title);
+  return renderCheckboxOptions(text);
+}
 function set(id, value) {
   const el = document.getElementById(id);
   if (!el) return;
   const v = Array.isArray(value) ? value.filter(Boolean).join(' · ') : value;
   const s = v && v.trim ? (v.trim() || '—') : (v || '—');
+  if (typeof s === 'string' && hasChecklistDetail(s)) {
+    el.innerHTML = renderChecklistDetail(s, segment => {
+      const linkHtml = URL_RE.test(segment) ? linkifyValueHtml(segment) : null;
+      return linkHtml || renderCheckboxOptions(segment);
+    });
+    return;
+  }
   const linkHtml = typeof s === 'string' && URL_RE.test(s) ? linkifyValueHtml(s) : null;
   if (linkHtml) {
     el.innerHTML = linkHtml;
@@ -2291,11 +2431,11 @@ function renderRJ(f) {
     ? prjGroups.map(([title, g]) => `
         <div class="card">
           <div class="card-title">${escHtml(title.replace(/^Condições da\s+/i, '').trim())}</div>
-          <div class="kv-row"><span class="kv-label">Deságio</span><span class="kv-val">${escHtml(g['Deságio'] || '—')}</span></div>
-          <div class="kv-row"><span class="kv-label">Carência</span><span class="kv-val kv-val-long">${escHtml(g['Carência'] || '—')}</span></div>
-          <div class="kv-row"><span class="kv-label">Parcelas</span><span class="kv-val">${escHtml(g['Parcelas'] || '—')}</span></div>
-          <div class="kv-row"><span class="kv-label">Juros</span><span class="kv-val">${escHtml(g['Juros'] || '—')}</span></div>
-          <div class="kv-row"><span class="kv-label">Correção</span><span class="kv-val">${escHtml(g['Correção'] || '—')}</span></div>
+          <div class="kv-row"><span class="kv-label">Deságio</span><span class="kv-val">${renderChecklistValue(g['Deságio'] || '—', 'Deságio')}</span></div>
+          <div class="kv-row"><span class="kv-label">Carência</span><span class="kv-val kv-val-long">${renderChecklistValue(g['Carência'] || '—', 'Carência')}</span></div>
+          <div class="kv-row"><span class="kv-label">Parcelas</span><span class="kv-val">${renderChecklistValue(g['Parcelas'] || '—', 'Parcelas')}</span></div>
+          <div class="kv-row"><span class="kv-label">Juros</span><span class="kv-val">${renderChecklistValue(g['Juros'] || '—', 'Juros')}</span></div>
+          <div class="kv-row"><span class="kv-label">Correção</span><span class="kv-val">${renderChecklistValue(g['Correção'] || '—', 'Correção')}</span></div>
         </div>`).join('')
     : '<p style="color:var(--text-muted);font-size:12px">Nenhuma condição de PRJ identificada.</p>';
 
@@ -2326,11 +2466,80 @@ function renderRJ(f) {
   const checkItemAliases = { 'Laudo de imóveis essenciais': 'Laudo de Imóveis Essenciais' };
   document.getElementById('rj-checklist').innerHTML = checkItems.map(item => {
     const val = joinVals(getField(f, item) ?? getField(f, checkItemAliases[item])) || '';
-    return `<div class="checklist-row"><span class="checklist-label">${escHtml(item)}</span><span class="kv-val">${renderCheckboxOptions(val)}</span></div>`;
+    return `<div class="checklist-row"><span class="checklist-label">${escHtml(item)}</span><span class="kv-val">${renderChecklistValue(val, item)}</span></div>`;
   }).join('');
 }
 
-function renderCred(f) {
+function creditPanelTemplate(index, isActive = index === 0) {
+  return `<section class="credit-panel${isActive ? ' active' : ''}" data-credit-index="${index}" role="tabpanel">
+    <div class="credit-panel-actions">
+      <input type="file" id="replace-credit-input-${index}" accept=".docx" hidden onchange="replaceRenderedCredit(${index},this)">
+      <button type="button" class="toolbar-btn" id="replace-credit-btn-${index}" onclick="document.getElementById('replace-credit-input-${index}').click()">Substituir arquivo</button>
+    </div>
+    <div class="section-title">Crédito arrolado</div>
+    <div class="field" style="margin-bottom:1rem"><label>Credores</label><div class="val" data-credit-role="credor">—</div></div>
+    <div class="section-title">Detalhamento do crédito</div>
+    <div class="grid-4" data-credit-role="detalhamento"></div>
+    <div class="section-title">Partes</div>
+    <div class="grid">
+      <div class="field"><label>Devedor(es)</label><div class="val party-box" data-credit-role="devedores">—</div></div>
+      <div class="field"><label>Garantidor(es)</label><div class="val party-box" data-credit-role="garantidores">—</div></div>
+    </div>
+    <div class="section-title">Lastros</div>
+    <div class="credit-lastros-container" data-credit-role="lastros"></div>
+    <div class="section-title">Garantias</div>
+    <div class="credit-garantias-container" data-credit-role="garantias"></div>
+    <div class="section-title">Ações judiciais</div>
+    <div data-credit-role="acoes"></div>
+  </section>`;
+}
+function showCreditSubtab(index, button) {
+  document.querySelectorAll('#credit-subtabs .credit-subtab-item').forEach(btn => btn.classList.remove('active'));
+  document.querySelectorAll('#credit-panels .credit-panel').forEach(panel => panel.classList.remove('active'));
+  document.querySelector(`#credit-panels .credit-panel[data-credit-index="${index}"]`)?.classList.add('active');
+  button?.classList.add('active');
+}
+function renderCreditTabs(activeIndex = 0) {
+  const subtabs = document.getElementById('credit-subtabs');
+  const panels = document.getElementById('credit-panels');
+  activeIndex = Math.max(0, Math.min(activeIndex, state.cred.length - 1));
+  subtabs.hidden = state.cred.length === 0;
+  subtabs.innerHTML = state.cred.map((_, index) => `
+    <div class="credit-subtab-item${index === activeIndex ? ' active' : ''}" role="tab" onclick="showCreditSubtab(${index},this)">
+      <input class="credit-subtab-name" data-credit-name-index="${index}" value="${escAttr(creditLabel(index))}"
+        aria-label="Nome do crédito ${index + 1}" onclick="event.stopPropagation()"
+        onfocus="showCreditSubtab(${index},this.closest('.credit-subtab-item'))" oninput="renameCredit(${index},this.value,this)">
+      <button type="button" class="credit-remove-x" aria-label="Remover ${escAttr(creditLabel(index))}"
+        title="Remover crédito" onclick="removeCredit(${index},event)">×</button>
+    </div>`).join('');
+  panels.innerHTML = state.cred.map((_, index) => creditPanelTemplate(index, index === activeIndex)).join('');
+  state.cred.forEach((credit, index) => renderCred(credit, index));
+}
+
+async function replaceRenderedCredit(index, input) {
+  const file = input.files?.[0];
+  if (!file) return;
+  input.value = '';
+  const button = document.getElementById('replace-credit-btn-' + index);
+  const oldText = button?.textContent;
+  if (button) { button.disabled = true; button.textContent = 'Processando…'; }
+  try {
+    const parsed = await readDocx(file);
+    state.cred[index] = parsed;
+    fileBlobs.cred[index] = file;
+    renderCreditTabs(index);
+    buildDocumentButtons();
+    applyRiskTone();
+  } catch (err) {
+    alert('Erro ao substituir o arquivo: ' + err.message);
+    if (button) { button.disabled = false; button.textContent = oldText || 'Substituir arquivo'; }
+  }
+}
+
+function renderCred(f, creditIndex = 0) {
+  const creditRoot = document.querySelector(`#credit-panels .credit-panel[data-credit-index="${creditIndex}"]`);
+  if (!creditRoot) return;
+  const creditEl = role => creditRoot.querySelector(`[data-credit-role="${role}"]`);
   // Alguns templates (ex.: Checklist_RJ_Creditos) descrevem cada classe numa
   // tabela própria (sem banner de bloco isolando-a), cada uma repetindo os
   // campos "Credor", "Advogado(s)" e "Representatividade" — se lêssemos de
@@ -2358,14 +2567,14 @@ function renderCred(f) {
   const credorInfo = [/^Classe I(\s|\(|$)/i, /^Classe II(\s|\(|$)/i, /^Classe III(\s|\(|$)/i]
     .map(classeFromScalarTables).find(c => c.credor) || {};
   const nomeCredor = credorInfo.credor || pick(f, 'Credor (Nome e CNPJ)');
-  const credorEl = document.getElementById('cr-credor');
+  const credorEl = creditEl('credor');
   if (!nomeCredor) {
     credorEl.textContent = '—';
   } else {
     const advs = (credorInfo.advs || joinVals(pick(f, 'Advogado(s)', 'Advogados'))).split(/;\s*/).map(a => a.trim()).filter(Boolean);
     credorEl.innerHTML = `<div class="party-card">
-      <div class="parte-nome">${escHtml(nomeCredor)}</div>
-      ${advs.map(a => `<div class="parte-adv">Adv.: ${escHtml(a)}</div>`).join('')}
+      <div class="parte-nome">${hasChecklistDetail(nomeCredor) ? renderChecklistDetail(nomeCredor, escHtml, 'Credor') : escHtml(nomeCredor)}</div>
+      ${advs.map(a => `<div class="parte-adv">Adv.: ${hasChecklistDetail(a) ? renderChecklistDetail(a, escHtml, 'Advogado') : escHtml(a)}</div>`).join('')}
     </div>`;
   }
   const classePairs = [
@@ -2379,16 +2588,16 @@ function renderCred(f) {
     valor: p.valor || pick(f, p.classe),
     rep: p.rep || pick(f, `Representatividade (%) — ${p.classe}`, `Representatividade (%) - ${p.classe}`)
   })).filter(p => p.valor);
-  const detalhamentoEl = document.getElementById('cr-detalhamento');
+  const detalhamentoEl = creditEl('detalhamento');
   let detalhamentoHtml = classePairs.map(p => `
-      <div class="subcard"><div class="subcard-title">${escHtml(p.classe)}</div><div class="val">${escHtml(p.valor)}</div></div>
-      <div class="subcard"><div class="subcard-title">Representatividade</div><div class="val">${escHtml(p.rep || '—')}</div></div>`
+      <div class="subcard"><div class="subcard-title">${escHtml(p.classe)}</div><div class="val">${renderChecklistValue(p.valor, p.classe)}</div></div>
+      <div class="subcard"><div class="subcard-title">Representatividade</div><div class="val">${renderChecklistValue(p.rep || '—', 'Representatividade')}</div></div>`
     ).join('');
   // Extraconcursal não tem representatividade própria — só a caixinha do
   // valor, do mesmo tamanho/estilo das demais, na mesma linha.
   const extraconcursal = pick(f, 'Extraconcursal') || pickMatching(f, /^Extraconcursal(\s|\(|$)/i);
   if (extraconcursal) {
-    detalhamentoHtml += `<div class="subcard"><div class="subcard-title">Extraconcursal</div><div class="val">${escHtml(extraconcursal)}</div></div>`;
+    detalhamentoHtml += `<div class="subcard"><div class="subcard-title">Extraconcursal</div><div class="val">${renderChecklistValue(extraconcursal, 'Extraconcursal')}</div></div>`;
   }
   detalhamentoEl.innerHTML = detalhamentoHtml
     || '<p style="color:var(--text-muted);font-size:12px">Nenhuma classe com crédito identificada.</p>';
@@ -2405,33 +2614,43 @@ function renderCred(f) {
     if (em) devedores.add(em);
     if (av) garantidores.add(av);
   });
-  setPartyBox('cr-devedores', [...devedores].join('; '));
-  setPartyBox('cr-garantidores', [...garantidores].join('; '));
+  const renderPartyBoxInto = (el, value) => {
+    const records = parsePartyRecords(value);
+    if (!records.length) { el.innerHTML = '—'; return; }
+    el.innerHTML = records.map(r => {
+      const idPart = r.kind ? ` - ${r.kind} ${normalizeIdNumber(r.kind, r.id)}` : '';
+      return `<div class="party-box-line">${escHtml(titleCasePartyName(r.name) + idPart)}</div>`;
+    }).join('');
+  };
+  renderPartyBoxInto(creditEl('devedores'), [...devedores].join('; '));
+  renderPartyBoxInto(creditEl('garantidores'), [...garantidores].join('; '));
 
-  document.getElementById('cr-lastros-container').innerHTML = lastroBlocks.length
+  creditEl('lastros').innerHTML = lastroBlocks.length
     ? `<div class="mini-table-wrap"><table class="mini-table">
         <colgroup><col style="width:15%"><col style="width:16%"><col style="width:15%"><col style="width:16%"><col style="width:11%"><col style="width:15%"><col style="width:12%"></colgroup>
         <thead><tr><th>Lastro</th><th>Cédula</th><th>Emitente(s)</th><th>Avalista(s)/Fiador(es)</th><th>Emissão</th><th>Valor (Emissão)</th><th>Classe</th></tr></thead>
         <tbody>${lastroBlocks.map(b => {
           const bf = b.fields;
           const gar = joinVals(bf['Garantia']);
-          const verGarantiaBtn = gar && !/^n\s*\/\s*a\.?$/i.test(gar.trim())
-            ? `<button type="button" class="ver-detail-btn" data-modal-title="${escAttr('Garantia — ' + b.header)}" data-modal-text="${escAttr(gar)}" onclick="showDetailModal(this)">Ver garantia ▾</button>`
-            : '';
+          const verGarantiaBtn = hasChecklistDetail(gar)
+            ? renderChecklistDetail(gar, renderCheckboxOptions, 'Garantia — ' + b.header)
+            : gar && !/^n\s*\/\s*a\.?$/i.test(gar.trim())
+              ? `<button type="button" class="ver-detail-btn" data-modal-title="${escAttr('Garantia — ' + b.header)}" data-modal-text="${escAttr(gar)}" onclick="showDetailModal(this)">Ver garantia ▾</button>`
+              : '';
           return `<tr>
-            <td class="td-mono">${escHtml(b.header)}${verGarantiaBtn}</td>
-            <td>${escHtml(joinVals(bf['Cédula']) || '—')}</td>
-            <td>${escHtml(joinVals(bf['Emitente(s)'] || bf['Emitente']) || '—')}</td>
-            <td>${escHtml(joinVals(bf['Avalista(s)/Fiador(es)'] || bf['Avalista(s)'] || bf['Avalista/Fiador']) || '—')}</td>
-            <td>${escHtml(joinVals(bf['Emissão']) || '—')}</td>
-            <td>${escHtml(joinVals(bf['Valor (Emissão)'] || bf['Valor Arrolado']) || '—')}</td>
-            <td>${escHtml(joinVals(bf['Classe']) || '—')}</td>
+            <td class="td-mono">${renderChecklistValue(b.header, b.header)}${verGarantiaBtn}</td>
+            <td>${renderChecklistValue(bf['Cédula'], 'Cédula')}</td>
+            <td>${renderChecklistValue(bf['Emitente(s)'] || bf['Emitente'], 'Emitente(s)')}</td>
+            <td>${renderChecklistValue(bf['Avalista(s)/Fiador(es)'] || bf['Avalista(s)'] || bf['Avalista/Fiador'], 'Avalista(s)/Fiador(es)')}</td>
+            <td>${renderChecklistValue(bf['Emissão'], 'Emissão')}</td>
+            <td>${renderChecklistValue(bf['Valor (Emissão)'] || bf['Valor Arrolado'], 'Valor (Emissão)')}</td>
+            <td>${renderChecklistValue(bf['Classe'], 'Classe')}</td>
           </tr>`;
         }).join('')}</tbody>
       </table></div>`
     : '<p style="color:var(--text-muted);font-size:12px">Nenhum lastro identificado.</p>';
 
-  document.getElementById('cr-garantias-container').innerHTML = garantiaBlocks.length
+  creditEl('garantias').innerHTML = garantiaBlocks.length
     ? `<div class="mini-table-wrap"><table class="mini-table">
         <colgroup><col style="width:12%"><col style="width:12%"><col style="width:15%"><col style="width:22%"><col style="width:24%"><col style="width:15%"></colgroup>
         <thead><tr><th>Garantia</th><th>Matrícula nº</th><th>Comarca</th><th>Proprietário(s)</th><th>Descrição</th><th>Avaliação</th></tr></thead>
@@ -2439,16 +2658,18 @@ function renderCred(f) {
           const bf = b.fields;
           const mat = joinVals(bf['Matrícula nº']);
           const onus = joinVals(bf['Ônus']);
-          const verOnusBtn = onus
-            ? `<button type="button" class="ver-detail-btn" data-modal-title="${escAttr('Ônus vigentes — Matrícula ' + mat)}" data-modal-text="${escAttr(onus)}" onclick="showDetailModal(this)">Ver ônus ▾</button>`
-            : '';
+          const verOnusBtn = hasChecklistDetail(onus)
+            ? renderChecklistDetail(onus, renderCheckboxOptions, 'Ônus vigentes — Matrícula ' + mat)
+            : onus
+              ? `<button type="button" class="ver-detail-btn" data-modal-title="${escAttr('Ônus vigentes — Matrícula ' + mat)}" data-modal-text="${escAttr(onus)}" onclick="showDetailModal(this)">Ver ônus ▾</button>`
+              : '';
           return `<tr>
-            <td class="td-mono">${escHtml(b.header)}</td>
-            <td>${escHtml(mat || '—')}</td>
-            <td>${escHtml(joinVals(bf['Comarca']) || '—')}</td>
-            <td>${escHtml(joinVals(bf['Proprietário'] || bf['Proprietários']) || '—')}</td>
-            <td class="td-desc"><span class="editable-value">${escHtml(joinVals(bf['Descrição']) || '—')}</span>${verOnusBtn}</td>
-            <td>${escHtml(joinVals(bf['Avaliação']) || '—')}</td>
+            <td class="td-mono">${renderChecklistValue(b.header, b.header)}</td>
+            <td>${renderChecklistValue(mat || '—', 'Matrícula')}</td>
+            <td>${renderChecklistValue(bf['Comarca'], 'Comarca')}</td>
+            <td>${renderChecklistValue(bf['Proprietário'] || bf['Proprietários'], 'Proprietário(s)')}</td>
+            <td class="td-desc"><span class="editable-value">${renderChecklistValue(bf['Descrição'], 'Descrição')}</span>${verOnusBtn}</td>
+            <td>${renderChecklistValue(bf['Avaliação'], 'Avaliação')}</td>
           </tr>`;
         }).join('')}</tbody>
       </table></div>`
@@ -2458,7 +2679,7 @@ function renderCred(f) {
     !/^LASTRO/i.test(b.header) && !/^(Garantia|Imóvel)/i.test(b.header) &&
     Object.keys(b.fields).some(k => /processo/i.test(k))
   );
-  document.getElementById('cr-acoes').innerHTML = acaoBlocks.length
+  creditEl('acoes').innerHTML = acaoBlocks.length
     ? acaoBlocks.map(b => `
       <div class="card" style="margin-bottom:.75rem">
         <div class="card-title">${escHtml(b.header)}</div>
@@ -2470,7 +2691,7 @@ function renderCred(f) {
           // Todos os campos destes cartões ficam justificados — em valores
           // curtos (nº do processo, checkbox) não muda nada visualmente
           // (justify só afeta texto que quebra em mais de uma linha).
-          return `<div class="kv-row"><span class="kv-label">${escHtml(k)}</span><span class="kv-val kv-val-long">${renderCheckboxOptions(text)}</span></div>`;
+          return `<div class="kv-row"><span class="kv-label">${escHtml(k)}</span><span class="kv-val kv-val-long">${renderChecklistValue(text, k)}</span></div>`;
         }).join('')}
       </div>`).join('')
     : '<p style="color:var(--text-muted);font-size:12px">Nenhuma ação judicial identificada.</p>';
@@ -2637,18 +2858,18 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeDetai
 
 
 function buildDocumentButtons() {
+  const creditCount = Math.max(state.cred.length, fileBlobs.cred.length);
   const config = [
-    ['prev', 'Prévia', !!fileBlobs.prev],
-    ['rj', 'Checklist RJ', !!fileBlobs.rj],
-    ['cred', 'Créditos em RJ', !!fileBlobs.cred],
-    ['ativos', 'Análise de Matrículas', !!ativosBlob]
+    ['Prévia', !!(fileBlobs.prev || state.prev), docUrls.prev],
+    ['Checklist RJ', !!(fileBlobs.rj || state.rj), docUrls.rj],
+    ...Array.from({ length: creditCount }, (_, index) => [creditLabel(index), true, docUrls.cred[index] || '']),
+    ['Análise de Matrículas', !!(ativosBlob || ativosData.length), docUrls.ativos]
   ];
   const container = document.getElementById('dl-buttons');
   if (!container) return;
   container.innerHTML = '';
-  config.forEach(([key, label, loaded]) => {
+  config.forEach(([label, loaded, url]) => {
     if (!loaded) return;
-    const url = docUrls[key] || '';
     const el = document.createElement(url ? 'a' : 'span');
     el.className = 'toolbar-btn' + (url ? '' : ' is-disabled');
     if (url) { el.href = url; el.target = '_blank'; el.rel = 'noopener noreferrer'; }
@@ -2693,7 +2914,8 @@ async function downloadPainel() {
   }));
   const bootstrapData = {
     ativosData, ativosUrlMap, kmzCoordsMap, avaliacaoDataUris, kmzDataUris,
-    statePrev: state.prev, stateRj: state.rj, stateCred: state.cred
+    statePrev: state.prev, stateRj: state.rj, stateCred: state.cred,
+    creditNames, docUrls
   };
 
   const clone = document.documentElement.cloneNode(true);
@@ -2719,7 +2941,14 @@ async function downloadPainel() {
       Object.assign(kmzFileMap, d.kmzDataUris || {});
       if (d.statePrev) state.prev = d.statePrev;
       if (d.stateRj) state.rj = d.stateRj;
-      if (d.stateCred) state.cred = d.stateCred;
+      if (d.stateCred) state.cred = Array.isArray(d.stateCred) ? d.stateCred : [d.stateCred];
+      creditNames = Array.isArray(d.creditNames) ? d.creditNames : state.cred.map((_, i) => 'Crédito ' + (i + 1));
+      if (d.docUrls) {
+        docUrls.prev = d.docUrls.prev || '';
+        docUrls.rj = d.docUrls.rj || '';
+        docUrls.cred = Array.isArray(d.docUrls.cred) ? d.docUrls.cred : [];
+        docUrls.ativos = d.docUrls.ativos || '';
+      }
     })();
   `;
   clone.querySelector('body').appendChild(bootstrapScript);
@@ -2743,7 +2972,7 @@ async function gerarPainel() {
   try {
     if (fileBlobs.prev) state.prev = await readDocx(fileBlobs.prev);
     if (fileBlobs.rj)   state.rj   = await readDocx(fileBlobs.rj);
-    if (fileBlobs.cred) state.cred = await readDocx(fileBlobs.cred);
+    state.cred = await Promise.all(fileBlobs.cred.map(file => readDocx(file)));
     if (ativosBlob) {
       updateAtivosUrls();
       ativosData = await readXlsx(ativosBlob);
@@ -2755,20 +2984,20 @@ async function gerarPainel() {
 
     if (state.prev) renderPrev(state.prev);
     if (state.rj)   renderRJ(state.rj);
-    if (state.cred) renderCred(state.cred);
+    if (state.cred.length) renderCreditTabs();
     if (ativosData.length) renderAtivos(ativosData);
     // Botões dos documentos-fonte, usando os links de SharePoint informados no upload.
-    updateUrl('prev'); updateUrl('rj'); updateUrl('cred'); if (document.getElementById('url-ativos')) updateUrl('ativos');
+    updateUrl('prev'); updateUrl('rj'); fileBlobs.cred.forEach((_, index) => updateCreditUrl(index)); if (document.getElementById('url-ativos')) updateUrl('ativos');
     buildDocumentButtons();
 
     // Visibilidade das abas
     document.getElementById('tab-btn-previa').style.display   = state.prev        ? '' : 'none';
     document.getElementById('tab-btn-rj').style.display       = state.rj          ? '' : 'none';
-    document.getElementById('tab-btn-creditos').style.display = state.cred        ? '' : 'none';
+    document.getElementById('tab-btn-creditos').style.display = state.cred.length ? '' : 'none';
     document.getElementById('tab-btn-ativos').style.display   = ativosData.length ? '' : 'none';
-    document.getElementById('tab-btn-ia').style.display       = (state.prev || state.rj || state.cred) ? '' : 'none';
+    document.getElementById('tab-btn-ia').style.display       = (state.prev || state.rj || state.cred.length) ? '' : 'none';
 
-    const first = state.prev ? 'previa' : state.rj ? 'rj' : state.cred ? 'creditos' : 'ativos';
+    const first = state.prev ? 'previa' : state.rj ? 'rj' : state.cred.length ? 'creditos' : 'ativos';
     showTab(first, document.getElementById('tab-btn-' + first));
 
     document.getElementById('screen-upload').style.display = 'none';
@@ -2777,7 +3006,7 @@ async function gerarPainel() {
     applyRiskTone();
 
     // Dispara análise IA em background
-    if (state.prev || state.rj || state.cred) {
+    if (state.prev || state.rj || state.cred.length) {
       gerarAnaliseIA();
     }
 
